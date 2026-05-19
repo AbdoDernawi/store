@@ -1,14 +1,18 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-19T10:30:00+03:00",
-  "current_phase": "2",
+  "last_updated": "2026-05-19T11:20:00+02:00",
+  "current_phase": "3a",
   "phases": {
     "1": {
       "status": "verified",
       "completed_at": "2026-05-19T10:18:00+03:00",
       "notes": "Next.js scaffold, required packages, PWA/image config, folder skeleton, and Supabase migrations are complete. GitHub origin pushed to AbdoDernawi/store main. Supabase project store (drjibcdcwrzeoobduhgt) is active with 37 public tables, RLS enabled, and clean security advisors. Vercel project elhabiebs-projects/store is linked to GitHub and production deployed at https://store-teal-six.vercel.app. Local and Vercel builds passed."
     },
-    "2": { "status": "pending", "completed_at": null, "notes": "" },
+    "2": {
+      "status": "verified",
+      "completed_at": "2026-05-19T11:20:00+02:00",
+      "notes": "Authentication & Role-Based Routing is implemented and locally verified. Added Arabic light minimalist login/register pages, custom JWT cookie session, Supabase SSR clients, role middleware, initial dashboards for admin/marketer/delivery/customer, and Supabase Edge Function auth-password-v2 using Supabase Auth for password validation. Local lint/build passed; browser and HTTP checks verified redirects and role access."
+    },
     "3a": { "status": "pending", "completed_at": null, "notes": "" },
     "3b": { "status": "pending", "completed_at": null, "notes": "" },
     "4a": { "status": "pending", "completed_at": null, "notes": "" },
@@ -31,11 +35,36 @@
     "supabase/migrations/202605190002_harden_rls_helper_functions.sql",
     "supabase/migrations/202605190003_index_foreign_keys.sql",
     ".gitignore",
+    ".eslintignore",
     ".env.example",
-    "docs/DESIGN_DIRECTION.md"
+    "tsconfig.json",
+    "docs/DESIGN_DIRECTION.md",
+    "types/auth.ts",
+    "lib/auth.ts",
+    "lib/auth/session.ts",
+    "lib/auth/edge-function.ts",
+    "lib/supabase/client.ts",
+    "lib/supabase/server.ts",
+    "lib/supabase/middleware.ts",
+    "components/auth/LoginForm.tsx",
+    "components/auth/RegisterForm.tsx",
+    "components/dashboard/RoleDashboard.tsx",
+    "app/(auth)/login/page.tsx",
+    "app/(auth)/register/page.tsx",
+    "app/api/auth/login/route.ts",
+    "app/api/auth/register/route.ts",
+    "app/api/auth/logout/route.ts",
+    "app/api/auth/me/route.ts",
+    "app/(admin)/admin/dashboard/page.tsx",
+    "app/(marketer)/marketer/dashboard/page.tsx",
+    "app/(delivery)/delivery/dashboard/page.tsx",
+    "app/(customer)/customer/home/page.tsx",
+    "middleware.ts",
+    "supabase/functions/auth-password-v2/index.ts"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",
-    "Supabase connector exposes publishable/anon keys but not SUPABASE_SERVICE_ROLE_KEY; add the service-role key manually to Vercel before server-only API routes require it."
+    "Supabase connector exposes publishable/anon keys but not SUPABASE_SERVICE_ROLE_KEY; add the service-role key manually to Vercel before future Next.js server-only routes require it.",
+    "Supabase Edge Function auth-password v1 remains deployed but unused after an Edge runtime boot issue; active authentication uses auth-password-v2."
   ]
 }
