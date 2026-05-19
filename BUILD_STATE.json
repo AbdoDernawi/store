@@ -1,12 +1,12 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-19T09:24:00+03:00",
-  "current_phase": "1",
+  "last_updated": "2026-05-19T10:18:00+03:00",
+  "current_phase": "2",
   "phases": {
     "1": {
-      "status": "in_progress",
-      "completed_at": null,
-      "notes": "Next.js scaffold, required packages, PWA/image config, folder skeleton, and initial Supabase schema migration are complete. Local lint/build passed, and the dev server responded on http://127.0.0.1:3000. External GitHub push and Vercel deploy remain pending because no remote/project credentials are configured."
+      "status": "verified",
+      "completed_at": "2026-05-19T10:18:00+03:00",
+      "notes": "Next.js scaffold, required packages, PWA/image config, folder skeleton, and Supabase migrations are complete. GitHub origin pushed to AbdoDernawi/store main. Supabase project store (drjibcdcwrzeoobduhgt) is active with 37 public tables, RLS enabled, and clean security advisors. Vercel project elhabiebs-projects/store is linked to GitHub and production deployed at https://store-teal-six.vercel.app. Local and Vercel builds passed."
     },
     "2": { "status": "pending", "completed_at": null, "notes": "" },
     "3a": { "status": "pending", "completed_at": null, "notes": "" },
@@ -28,11 +28,13 @@
     "app/globals.css",
     "public/manifest.json",
     "supabase/migrations/202605190001_initial_schema.sql",
+    "supabase/migrations/202605190002_harden_rls_helper_functions.sql",
+    "supabase/migrations/202605190003_index_foreign_keys.sql",
     ".gitignore",
     ".env.example"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",
-    "GitHub push and Vercel deploy require external account/remotes and are not yet verified."
+    "Supabase connector exposes publishable/anon keys but not SUPABASE_SERVICE_ROLE_KEY; add the service-role key manually to Vercel before server-only API routes require it."
   ]
 }
