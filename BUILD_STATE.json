@@ -1,6 +1,6 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-19T10:18:00+03:00",
+  "last_updated": "2026-05-19T10:30:00+03:00",
   "current_phase": "2",
   "phases": {
     "1": {
@@ -31,7 +31,8 @@
     "supabase/migrations/202605190002_harden_rls_helper_functions.sql",
     "supabase/migrations/202605190003_index_foreign_keys.sql",
     ".gitignore",
-    ".env.example"
+    ".env.example",
+    "docs/DESIGN_DIRECTION.md"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",

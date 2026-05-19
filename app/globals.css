@@ -5,14 +5,19 @@
 @tailwind utilities;
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
+  --background: #f8faf8;
+  --foreground: #0f172a;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: "Tajawal", Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: #bbf7d0;
+  color: #052e16;
 }
 
 @layer utilities {

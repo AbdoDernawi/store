@@ -4,8 +4,8 @@
   "description": "إدارة الطلبات والمخازن والتوصيل والمالية",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#0f766e",
+  "background_color": "#f8faf8",
+  "theme_color": "#047857",
   "dir": "rtl",
   "lang": "ar",
   "icons": []
