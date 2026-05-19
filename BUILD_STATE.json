@@ -1,6 +1,6 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-19T14:20:42+02:00",
+  "last_updated": "2026-05-20T00:00:08+02:00",
   "current_phase": "4b",
   "phases": {
     "1": {
@@ -28,7 +28,11 @@
       "completed_at": "2026-05-19T14:20:42+02:00",
       "notes": "Admin Interface phase A is complete. Added Arabic RTL admin shell, sidebar/topbar, dashboard period toggle, urgent task cards, finance metrics with net profit, sales chart, delivery custody, top marketers, orders search/filter list, and order detail actions panel. Local lint/build passed and browser check verified protected admin routing."
     },
-    "4b": { "status": "pending", "completed_at": null, "notes": "" },
+    "4b": {
+      "status": "pending",
+      "completed_at": null,
+      "notes": "Admin Interface phase B is implemented locally and Supabase migration phase4b_admin_management is applied remotely. Added product image processing API, product/warehouse/supplier/user/finance/settings/content/invoice admin pages, storage bucket product-images, storage policies, inventory adjustment, purchase order, supplier payment, and expense RPC functions. Local lint/build passed. Remaining blocker before marking verified: deploy updated auth-password-v2 Edge Function, or configure SUPABASE_SERVICE_ROLE_KEY in Vercel, so admin user creation can create Supabase Auth users in production."
+    },
     "5a": { "status": "pending", "completed_at": null, "notes": "" },
     "5b": { "status": "pending", "completed_at": null, "notes": "" },
     "6": { "status": "pending", "completed_at": null, "notes": "" },
@@ -102,10 +106,37 @@
     "supabase/migrations/202605190004_phase3_order_inventory_functions.sql",
     "supabase/migrations/202605190005_phase3_create_order_function.sql",
     "supabase/migrations/202605190006_phase3_order_status_functions.sql"
+    ,"app/api/images/process/route.ts"
+    ,"app/api/admin/products/route.ts"
+    ,"app/api/admin/products/[id]/route.ts"
+    ,"app/api/admin/warehouses/adjust/route.ts"
+    ,"app/api/admin/warehouses/priorities/route.ts"
+    ,"app/api/admin/suppliers/route.ts"
+    ,"app/api/admin/suppliers/purchase-orders/route.ts"
+    ,"app/api/admin/suppliers/payments/route.ts"
+    ,"app/api/admin/users/route.ts"
+    ,"app/api/admin/users/[id]/route.ts"
+    ,"app/api/admin/finance/expenses/route.ts"
+    ,"app/api/admin/settings/cities/route.ts"
+    ,"app/api/admin/settings/zones/route.ts"
+    ,"app/api/admin/settings/statuses/route.ts"
+    ,"app/api/admin/content/banners/route.ts"
+    ,"app/(admin)/admin/products/page.tsx"
+    ,"app/(admin)/admin/warehouses/page.tsx"
+    ,"app/(admin)/admin/suppliers/page.tsx"
+    ,"app/(admin)/admin/users/page.tsx"
+    ,"app/(admin)/admin/finance/page.tsx"
+    ,"app/(admin)/admin/settings/page.tsx"
+    ,"app/(admin)/admin/content/page.tsx"
+    ,"app/(admin)/admin/invoices/page.tsx"
+    ,"components/admin/AdminManagementForms.tsx"
+    ,"lib/admin/management.ts"
+    ,"supabase/migrations/202605190007_phase4b_admin_management.sql"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",
     "Phase 3 APIs use the user's Supabase access token stored in httpOnly cookies so they can respect RLS without exposing SUPABASE_SERVICE_ROLE_KEY in Vercel.",
-    "Supabase Edge Function auth-password v1 remains deployed but unused after an Edge runtime boot issue; active authentication uses auth-password-v2."
+    "Supabase Edge Function auth-password v1 remains deployed but unused after an Edge runtime boot issue; active authentication uses auth-password-v2.",
+    "Phase 4B admin user creation route has a service-role fallback, but Vercel currently has no SUPABASE_SERVICE_ROLE_KEY. The updated auth-password-v2 source supports admin_create_user, but deploying it needs SUPABASE_ACCESS_TOKEN or an authenticated Supabase CLI session."
   ]
 }

@@ -10,6 +10,7 @@ import {
   PackageCheck,
   Settings,
   ShoppingBag,
+  Truck,
   Users,
 } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/admin/orders", label: "الطلبيات", icon: ShoppingBag },
   { href: "/admin/products", label: "المنتجات", icon: PackageCheck },
   { href: "/admin/warehouses", label: "المخازن", icon: Boxes },
+  { href: "/admin/suppliers", label: "الموردين", icon: Truck },
   { href: "/admin/users", label: "المستخدمين", icon: Users },
   { href: "/admin/finance", label: "المالية", icon: Landmark },
   { href: "/admin/invoices", label: "الفواتير", icon: FileText },

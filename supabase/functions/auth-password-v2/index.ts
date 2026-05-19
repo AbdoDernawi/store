@@ -156,5 +156,96 @@ Deno.serve(async (request) => {
     return json({ user: toAuthUser(profile), tokens: toTokens(signInData.session) }, 201);
   }
 
+  if (body.action === "admin_create_user") {
+    const authHeader = request.headers.get("Authorization") || "";
+    const accessToken = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: callerData, error: callerError } = await publicAuth.auth.getUser(accessToken);
+
+    if (callerError || !callerData.user) {
+      return json({ error: "يرجى تسجيل الدخول بصلاحية إدارة." }, 401);
+    }
+
+    const { data: callerProfile, error: callerProfileError } = await supabase
+      .from("users")
+      .select("id, role, is_active")
+      .eq("id", callerData.user.id)
+      .maybeSingle();
+
+    if (callerProfileError || !callerProfile?.is_active) {
+      return json({ error: "تعذر التحقق من صلاحية المدير." }, 403);
+    }
+
+    const role = String(body.role || "customer");
+    const allowedRoles = ["admin", "marketer", "delivery", "customer"];
+
+    if (!allowedRoles.includes(role)) {
+      return json({ error: "الدور المطلوب غير مدعوم." }, 400);
+    }
+
+    if (callerProfile.role !== "super_admin" && role === "admin") {
+      return json({ error: "إنشاء المدراء متاح للمشرف العام فقط." }, 403);
+    }
+
+    if (!["super_admin", "admin"].includes(callerProfile.role)) {
+      return json({ error: "لا تملك صلاحية إنشاء الحسابات." }, 403);
+    }
+
+    const fullName = String(body.fullName || "").trim();
+
+    if (fullName.length < 2) {
+      return json({ error: "تأكد من الاسم الكامل." }, 400);
+    }
+
+    const { data: existingProfile, error: existingError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+
+    if (existingError) {
+      return json({ error: "تعذر إنشاء الحساب الآن." }, 500);
+    }
+
+    if (existingProfile) {
+      return json({ error: "رقم الهاتف مسجل بالفعل." }, 409);
+    }
+
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      phone,
+      password,
+      phone_confirm: true,
+      app_metadata: { role },
+      user_metadata: { full_name: fullName },
+    });
+
+    if (authError || !authData.user) {
+      return json({ error: "تعذر إنشاء الحساب الآن." }, 500);
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .insert({
+        id: authData.user.id,
+        phone,
+        password_hash: null,
+        full_name: fullName,
+        role,
+        is_active: true,
+      })
+      .select("id, phone, full_name, role, is_active")
+      .single();
+
+    if (profileError || !profile) {
+      await supabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
+      return json({ error: "تعذر حفظ بيانات الحساب." }, 500);
+    }
+
+    if (role === "marketer") {
+      await supabase.from("wallets").insert({ user_id: profile.id, balance: 0 }).catch(() => {});
+    }
+
+    return json({ user: toAuthUser(profile) }, 201);
+  }
+
   return json({ error: "عملية المصادقة غير معروفة." }, 400);
 });
