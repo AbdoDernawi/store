@@ -1,6 +1,6 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-19T11:20:00+02:00",
+  "last_updated": "2026-05-19T11:28:00+02:00",
   "current_phase": "3a",
   "phases": {
     "1": {
@@ -11,7 +11,7 @@
     "2": {
       "status": "verified",
       "completed_at": "2026-05-19T11:20:00+02:00",
-      "notes": "Authentication & Role-Based Routing is implemented and locally verified. Added Arabic light minimalist login/register pages, custom JWT cookie session, Supabase SSR clients, role middleware, initial dashboards for admin/marketer/delivery/customer, and Supabase Edge Function auth-password-v2 using Supabase Auth for password validation. Local lint/build passed; browser and HTTP checks verified redirects and role access."
+      "notes": "Authentication & Role-Based Routing is implemented and verified locally and on production. Added Arabic light minimalist login/register pages, custom JWT cookie session, Supabase SSR clients, role middleware, initial dashboards for admin/marketer/delivery/customer, and Supabase Edge Function auth-password-v2 using Supabase Auth for password validation. Local lint/build passed; browser and HTTP checks verified redirects and role access. Vercel production at https://store-teal-six.vercel.app was deployed and checked for login, admin protection, and auth rejection behavior."
     },
     "3a": { "status": "pending", "completed_at": null, "notes": "" },
     "3b": { "status": "pending", "completed_at": null, "notes": "" },
