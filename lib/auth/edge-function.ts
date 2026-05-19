@@ -1,10 +1,12 @@
 import type { AuthUser } from "@/types/auth";
+import type { SupabaseAuthTokens } from "@/lib/auth/supabase-token";
 
 type AuthAction = "login" | "register";
 
 type AuthFunctionResponse =
   | {
       user: AuthUser;
+      tokens?: SupabaseAuthTokens;
     }
   | {
       error: string;
@@ -49,6 +51,7 @@ export async function callPasswordAuthFunction(
 
   return {
     user: data.user,
+    tokens: data.tokens,
     status: response.status,
   };
 }

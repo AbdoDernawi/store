@@ -27,6 +27,18 @@ function toAuthUser(profile: any) {
   };
 }
 
+function toTokens(session: any) {
+  if (!session?.access_token) {
+    return null;
+  }
+
+  return {
+    accessToken: session.access_token,
+    refreshToken: session.refresh_token,
+    expiresIn: session.expires_in,
+  };
+}
+
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -81,7 +93,7 @@ Deno.serve(async (request) => {
       return json({ error: "هذا الحساب غير نشط." }, 403);
     }
 
-    return json({ user: toAuthUser(profile) });
+    return json({ user: toAuthUser(profile), tokens: toTokens(authData.session) });
   }
 
   if (body.action === "register") {
@@ -134,7 +146,14 @@ Deno.serve(async (request) => {
       return json({ error: "تعذر إنشاء الحساب الآن." }, 500);
     }
 
-    return json({ user: toAuthUser(profile) }, 201);
+    const { data: signInData, error: signInError } =
+      await publicAuth.auth.signInWithPassword({ phone, password });
+
+    if (signInError || !signInData.session) {
+      return json({ error: "تم إنشاء الحساب، لكن تعذر بدء الجلسة تلقائيًا." }, 500);
+    }
+
+    return json({ user: toAuthUser(profile), tokens: toTokens(signInData.session) }, 201);
   }
 
   return json({ error: "عملية المصادقة غير معروفة." }, 400);

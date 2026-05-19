@@ -5,6 +5,7 @@ import {
   SESSION_MAX_AGE_SECONDS,
   signSession,
 } from "@/lib/auth/session";
+import { setSupabaseAuthCookies } from "@/lib/auth/supabase-token";
 import { roleHomePath } from "@/types/auth";
 
 function normalizePhone(phone: unknown) {
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
   const token = await signSession(result.user);
   const redirectTo = roleHomePath[result.user.role];
   const response = NextResponse.json({ redirectTo });
+
+  setSupabaseAuthCookies(response, result.tokens);
 
   response.cookies.set({
     name: SESSION_COOKIE_NAME,

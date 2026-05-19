@@ -1,7 +1,8 @@
 export default function Home() {
   const readiness = [
-    { label: "إدارة متعددة الأدوار", value: "جاهز" },
+    { label: "إدارة متعددة الأدوار", value: "مفعّلة" },
     { label: "قاعدة بيانات Supabase", value: "37 جدول" },
+    { label: "المخزون والطلبات", value: "جاهز" },
     { label: "PWA و Vercel", value: "منشور" },
   ];
 
@@ -12,7 +13,7 @@ export default function Home() {
           <div>
             <div className="mb-8 flex w-fit items-center gap-3 border border-emerald-100 bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm">
               <span className="h-2.5 w-2.5 bg-emerald-500" />
-              Phase 1 verified
+              Phase 3 verified
             </div>
 
             <h1 className="max-w-3xl text-4xl font-black leading-tight text-slate-950 sm:text-6xl">
@@ -20,8 +21,8 @@ export default function Home() {
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              أساس تقني نظيف لإدارة الطلبات، المخازن، التوصيل، والمالية ضمن
-              واجهات عربية حديثة وخفيفة مناسبة لبيئة المتاجر.
+              أساس عملي لإدارة الطلبات، المخازن، التوصيل، والمالية ضمن واجهات
+              عربية هادئة ولطيفة تجعل تجربة المتجر أسهل وأخف.
             </p>
 
             <div className="mt-10 flex flex-wrap gap-3">
@@ -42,9 +43,9 @@ export default function Home() {
 
           <div className="border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="border-b border-slate-100 pb-5">
-              <p className="text-sm font-bold text-emerald-700">حالة التأسيس</p>
+              <p className="text-sm font-bold text-emerald-700">حالة النظام</p>
               <h2 className="mt-2 text-2xl font-black text-slate-950">
-                جاهز للمرحلة الثانية
+                جاهز لبناء واجهة الإدارة
               </h2>
             </div>
 

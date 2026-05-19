@@ -1,7 +1,7 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-19T11:28:00+02:00",
-  "current_phase": "3a",
+  "last_updated": "2026-05-19T11:58:00+02:00",
+  "current_phase": "4a",
   "phases": {
     "1": {
       "status": "verified",
@@ -13,8 +13,16 @@
       "completed_at": "2026-05-19T11:20:00+02:00",
       "notes": "Authentication & Role-Based Routing is implemented and verified locally and on production. Added Arabic light minimalist login/register pages, custom JWT cookie session, Supabase SSR clients, role middleware, initial dashboards for admin/marketer/delivery/customer, and Supabase Edge Function auth-password-v2 using Supabase Auth for password validation. Local lint/build passed; browser and HTTP checks verified redirects and role access. Vercel production at https://store-teal-six.vercel.app was deployed and checked for login, admin protection, and auth rejection behavior."
     },
-    "3a": { "status": "pending", "completed_at": null, "notes": "" },
-    "3b": { "status": "pending", "completed_at": null, "notes": "" },
+    "3a": {
+      "status": "verified",
+      "completed_at": "2026-05-19T11:58:00+02:00",
+      "notes": "Inventory & Smart Warehouse API is complete. Added allocation, reserve, release, return-stock, transfer APIs and database functions. Verified in Supabase with a rollback transaction: order quantity 6 split across two warehouses by priority and created 2 reserved warehouse_movements."
+    },
+    "3b": {
+      "status": "verified",
+      "completed_at": "2026-05-19T11:58:00+02:00",
+      "notes": "Order Lifecycle API is complete. Added create, approve, reject, package create, QR scan, deliver, cash handover confirm, bank transfer confirm, and cancel APIs. Supabase rollback verification completed create→approve→QR→deliver→cash confirm with delivered final status, QR assignment true, and marketer wallet balance 30.00."
+    },
     "4a": { "status": "pending", "completed_at": null, "notes": "" },
     "4b": { "status": "pending", "completed_at": null, "notes": "" },
     "5a": { "status": "pending", "completed_at": null, "notes": "" },
@@ -60,11 +68,31 @@
     "app/(delivery)/delivery/dashboard/page.tsx",
     "app/(customer)/customer/home/page.tsx",
     "middleware.ts",
-    "supabase/functions/auth-password-v2/index.ts"
+    "lib/auth/supabase-token.ts",
+    "lib/supabase/route.ts",
+    "lib/api/context.ts",
+    "app/api/orders/allocate/route.ts",
+    "app/api/orders/reserve/route.ts",
+    "app/api/orders/release/route.ts",
+    "app/api/orders/return-stock/route.ts",
+    "app/api/warehouse/transfer/route.ts",
+    "app/api/orders/create/route.ts",
+    "app/api/orders/approve/route.ts",
+    "app/api/orders/reject/route.ts",
+    "app/api/orders/cancel/route.ts",
+    "app/api/orders/deliver/route.ts",
+    "app/api/orders/confirm-transfer/route.ts",
+    "app/api/handovers/confirm/route.ts",
+    "app/api/packages/create/route.ts",
+    "app/api/packages/scan/route.ts",
+    "supabase/functions/auth-password-v2/index.ts",
+    "supabase/migrations/202605190004_phase3_order_inventory_functions.sql",
+    "supabase/migrations/202605190005_phase3_create_order_function.sql",
+    "supabase/migrations/202605190006_phase3_order_status_functions.sql"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",
-    "Supabase connector exposes publishable/anon keys but not SUPABASE_SERVICE_ROLE_KEY; add the service-role key manually to Vercel before future Next.js server-only routes require it.",
+    "Phase 3 APIs use the user's Supabase access token stored in httpOnly cookies so they can respect RLS without exposing SUPABASE_SERVICE_ROLE_KEY in Vercel.",
     "Supabase Edge Function auth-password v1 remains deployed but unused after an Edge runtime boot issue; active authentication uses auth-password-v2."
   ]
 }
