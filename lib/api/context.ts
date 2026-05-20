@@ -86,6 +86,30 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("هذا الطلب أُسند لمندوب آخر.", 409);
   }
 
+  if (message.includes("PACKAGE_NOT_FOUND")) {
+    return jsonError("لم يتم العثور على هذا الكود. جرّب المسح من جديد.", 404);
+  }
+
+  if (message.includes("NO_CASH_TO_HANDOVER")) {
+    return jsonError("لا توجد مبالغ كاش جاهزة للتسليم حالياً.", 409, message);
+  }
+
+  if (message.includes("NO_HANDOVER_ORDERS")) {
+    return jsonError("اختر طلباً واحداً على الأقل لإنشاء العهدة.", 400, message);
+  }
+
+  if (message.includes("INVALID_RETURN_HANDOVER")) {
+    return jsonError("عهدة المرتجعات تقبل الطلبات الراجعة فقط.", 400, message);
+  }
+
+  if (message.includes("INVALID_EXCUSE_REASON")) {
+    return jsonError("اكتب سبب الاعتذار باختصار.", 400, message);
+  }
+
+  if (message.includes("INVALID_HANDOVER_TYPE") || message.includes("INVALID_DELIVERY_TYPE")) {
+    return jsonError("نوع العملية غير واضح. راجع الاختيار ثم حاول مرة أخرى.", 400, message);
+  }
+
   if (message.includes("FORBIDDEN")) {
     return jsonError("لا تملك صلاحية تنفيذ هذه العملية.", 403);
   }
