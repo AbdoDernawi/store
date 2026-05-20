@@ -67,6 +67,88 @@ export type MarketerDashboardData = {
   lastOrders: MarketerOrderSummary[];
 };
 
+export type MarketerOrderListItem = MarketerOrderSummary & {
+  customer_phone: string;
+  city_id: string;
+  zone_id: string;
+  city_name: string;
+  zone_name: string;
+  payment_method: string;
+  payment_status: string;
+  delivery_id: string | null;
+  cancellation_requested_by: string | null;
+};
+
+export type MarketerOrderDetails = {
+  order: MarketerOrderListItem & {
+    customer_address: string;
+    delivery_name: string | null;
+    delivery_phone: string | null;
+    discount_amount: number;
+    invoice_type: string;
+    subtotal: number;
+    transfer_image_url: string | null;
+    virtual_store_id: string | null;
+    cancellation_reason: string | null;
+  };
+  items: Array<{
+    id: string;
+    product_id: string;
+    product_name: string;
+    quantity: number;
+    total_price: number;
+    unit_price: number;
+    variant_id: string;
+    variant_label: string;
+  }>;
+  history: Array<{
+    id: string;
+    changed_by: string | null;
+    changed_by_name: string | null;
+    created_at: string;
+    note: string | null;
+    status: string;
+  }>;
+  chat: {
+    id: string;
+    is_open: boolean;
+  } | null;
+};
+
+export type MarketerWalletData = {
+  balance: number;
+  transactions: Array<{
+    id: string;
+    amount: number;
+    created_at: string;
+    flow: string;
+    note: string | null;
+    source_id: string | null;
+    source_type: string;
+  }>;
+};
+
+export type MarketerVirtualStore = {
+  id: string;
+  store_name: string;
+  logo_url: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
+  contact_phone: string | null;
+  address: string | null;
+  invoice_note: string | null;
+};
+
+export type MarketerNotification = {
+  id: string;
+  title: string;
+  body: string;
+  type: string | null;
+  reference_id: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
 const activeOrderStatuses = [
   "pending_approval",
   "approved",
@@ -159,6 +241,148 @@ export async function getMarketerProductsData() {
   };
 }
 
+export async function getMarketerLocations() {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return {
+      cities: [] as MarketerCity[],
+      zones: [] as MarketerZone[],
+    };
+  }
+
+  const [cities, zones] = await Promise.all([
+    supabase.from("cities").select("id, name_ar").eq("is_active", true).order("name_ar"),
+    supabase
+      .from("zones")
+      .select("id, city_id, name_ar, delivery_fee")
+      .eq("is_active", true)
+      .order("name_ar"),
+  ]);
+
+  return {
+    cities: (cities.data || []) as MarketerCity[],
+    zones: normalizeZones(zones.data || []),
+  };
+}
+
+export async function getMarketerOrders(user: AuthSession, status?: string) {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return { orders: [] as MarketerOrderListItem[] };
+  }
+
+  let query = supabase
+    .from("orders")
+    .select(
+      "id, order_number, customer_name, customer_phone, city_id, zone_id, total, delivery_fee, payment_method, payment_status, status, delivery_id, cancellation_requested_by, created_at",
+    )
+    .eq("marketer_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  if (status && status !== "all") {
+    query = query.eq("status", status);
+  }
+
+  const [ordersResult, citiesResult, zonesResult] = await Promise.all([
+    query,
+    supabase.from("cities").select("id, name_ar"),
+    supabase.from("zones").select("id, name_ar"),
+  ]);
+  const cityNames = new Map((citiesResult.data || []).map((city) => [city.id, city.name_ar]));
+  const zoneNames = new Map((zonesResult.data || []).map((zone) => [zone.id, zone.name_ar]));
+
+  return {
+    orders: normalizeOrderList(ordersResult.data || [], cityNames, zoneNames),
+  };
+}
+
+export async function getMarketerOrderDetails(id: string): Promise<MarketerOrderDetails | null> {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase.rpc("get_marketer_order_details", {
+    p_order_id: id,
+  });
+
+  if (error || !data) {
+    return null;
+  }
+
+  return normalizeOrderDetails(data);
+}
+
+export async function getMarketerWalletData(user: AuthSession): Promise<MarketerWalletData> {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return { balance: 0, transactions: [] };
+  }
+
+  const { data: wallet } = await supabase
+    .from("wallets")
+    .select("id, balance")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!wallet) {
+    return { balance: 0, transactions: [] };
+  }
+
+  const { data: transactions } = await supabase
+    .from("wallet_transactions")
+    .select("id, flow, amount, source_type, source_id, note, created_at")
+    .eq("wallet_id", wallet.id)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  return {
+    balance: Number(wallet.balance || 0),
+    transactions: (transactions || []).map((transaction) => ({
+      ...transaction,
+      amount: Number(transaction.amount || 0),
+    })),
+  };
+}
+
+export async function getMarketerVirtualStore(user: AuthSession): Promise<MarketerVirtualStore | null> {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("virtual_stores")
+    .select("id, store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note")
+    .eq("marketer_id", user.id)
+    .maybeSingle();
+
+  return (data as MarketerVirtualStore | null) || null;
+}
+
+export async function getMarketerNotifications(user: AuthSession) {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return { notifications: [] as MarketerNotification[] };
+  }
+
+  const { data } = await supabase
+    .from("notifications")
+    .select("id, title, body, type, reference_id, is_read, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  return { notifications: (data || []) as MarketerNotification[] };
+}
+
 function normalizeCatalog(rows: unknown[]): MarketerCatalogProduct[] {
   return rows.map((row) => {
     const product = row as Omit<MarketerCatalogProduct, "images" | "marketer_price" | "variants"> & {
@@ -204,6 +428,48 @@ function normalizeZones(rows: unknown[]): MarketerZone[] {
       delivery_fee: Number(zone.delivery_fee || 0),
     };
   });
+}
+
+function normalizeOrderList(
+  rows: unknown[],
+  cityNames: Map<string, string>,
+  zoneNames: Map<string, string>,
+): MarketerOrderListItem[] {
+  return rows.map((row) => {
+    const order = row as MarketerOrderListItem & {
+      delivery_fee?: string | number | null;
+      total?: string | number | null;
+    };
+
+    return {
+      ...order,
+      city_name: cityNames.get(order.city_id) || "-",
+      delivery_fee: Number(order.delivery_fee || 0),
+      total: Number(order.total || 0),
+      zone_name: zoneNames.get(order.zone_id) || "-",
+    };
+  });
+}
+
+function normalizeOrderDetails(value: unknown): MarketerOrderDetails {
+  const details = value as MarketerOrderDetails;
+
+  return {
+    ...details,
+    items: (details.items || []).map((item) => ({
+      ...item,
+      quantity: Number(item.quantity || 0),
+      total_price: Number(item.total_price || 0),
+      unit_price: Number(item.unit_price || 0),
+    })),
+    order: {
+      ...details.order,
+      delivery_fee: Number(details.order.delivery_fee || 0),
+      discount_amount: Number(details.order.discount_amount || 0),
+      subtotal: Number(details.order.subtotal || 0),
+      total: Number(details.order.total || 0),
+    },
+  };
 }
 
 function normalizeOrders(rows: unknown[]): MarketerOrderSummary[] {

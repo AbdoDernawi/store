@@ -98,6 +98,21 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("تم تنفيذ هذه العملية سابقًا.", 409);
   }
 
+  if (
+    message.includes("INVALID_CUSTOMER_DETAILS") ||
+    message.includes("INVALID_DELIVERY_ZONE")
+  ) {
+    return jsonError("راجع بيانات الزبون والمنطقة ثم حاول من جديد.", 400, message);
+  }
+
+  if (
+    message.includes("ORDER_NOT_EDITABLE") ||
+    message.includes("ORDER_CANNOT_BE_CANCELLED") ||
+    message.includes("CHAT_NOT_AVAILABLE")
+  ) {
+    return jsonError("هذه العملية غير متاحة لحالة الطلب الحالية.", 409, message);
+  }
+
   return jsonError("حدث تعثر بسيط أثناء تنفيذ العملية.", 500, message);
 }
 
