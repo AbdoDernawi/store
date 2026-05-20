@@ -42,17 +42,22 @@ export async function POST(request: Request) {
 
   const body = await readJsonBody<CreateOrderBody>(request);
   const paymentMethod = body.payment_method || body.paymentMethod || "cash";
+  const customerName = body.customer_name || body.customerName;
+  const customerPhone = body.customer_phone || body.customerPhone;
+  const customerAddress = body.customer_address || body.customerAddress;
+  const cityId = body.city_id || body.cityId;
+  const zoneId = body.zone_id || body.zoneId;
 
   if (paymentMethod === "bank_transfer" && !(body.transfer_image_url || body.transferImageUrl)) {
     return jsonError("أرفق صورة التحويل حتى نكمل الطلب بسلاسة.", 400);
   }
 
   const { data, error } = await auth.context.supabase.rpc("create_store_order", {
-    p_customer_name: body.customer_name || body.customerName,
-    p_customer_phone: body.customer_phone || body.customerPhone,
-    p_customer_address: body.customer_address || body.customerAddress,
-    p_city_id: body.city_id || body.cityId,
-    p_zone_id: body.zone_id || body.zoneId,
+    p_customer_name: customerName,
+    p_customer_phone: customerPhone,
+    p_customer_address: customerAddress,
+    p_city_id: cityId,
+    p_zone_id: zoneId,
     p_payment_method: paymentMethod,
     p_transfer_image_url: body.transfer_image_url || body.transferImageUrl || null,
     p_items: normalizeItems(body.items),
@@ -64,5 +69,26 @@ export async function POST(request: Request) {
     return mapDatabaseError(error);
   }
 
-  return jsonOk({ order: data }, 201);
+  let customerSaved = true;
+
+  if (auth.context.user.role === "marketer") {
+    const { error: customerError } = await auth.context.supabase
+      .from("marketer_customers")
+      .upsert(
+        {
+          marketer_id: auth.context.user.id,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_address: customerAddress,
+          city_id: cityId,
+          zone_id: zoneId,
+          last_ordered_at: new Date().toISOString(),
+        },
+        { onConflict: "marketer_id,customer_phone" },
+      );
+
+    customerSaved = !customerError;
+  }
+
+  return jsonOk({ customer_saved: customerSaved, order: data }, 201);
 }
