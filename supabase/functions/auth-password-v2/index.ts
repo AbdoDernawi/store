@@ -11,6 +11,11 @@ function normalizePhone(phone: unknown) {
   return String(phone || "").trim().replace(/\s+/g, "");
 }
 
+function phoneAliasEmail(phone: string) {
+  const digits = normalizePhone(phone).replace(/\D/g, "");
+  return digits ? `${digits}@phone-login.local` : "";
+}
+
 function json(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -37,6 +42,23 @@ function toTokens(session: any) {
     refreshToken: session.refresh_token,
     expiresIn: session.expires_in,
   };
+}
+
+async function signInWithPhoneOrAlias(publicAuth: any, phone: string, password: string) {
+  const phoneResult = await publicAuth.auth.signInWithPassword({ phone, password });
+
+  if (!phoneResult.error && phoneResult.data?.user) {
+    return phoneResult;
+  }
+
+  const email = phoneAliasEmail(phone);
+
+  if (!email) {
+    return phoneResult;
+  }
+
+  const emailResult = await publicAuth.auth.signInWithPassword({ email, password });
+  return !emailResult.error && emailResult.data?.user ? emailResult : phoneResult;
 }
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -73,7 +95,7 @@ Deno.serve(async (request) => {
 
   if (body.action === "login") {
     const { data: authData, error: signInError } =
-      await publicAuth.auth.signInWithPassword({ phone, password });
+      await signInWithPhoneOrAlias(publicAuth, phone, password);
 
     if (signInError || !authData.user) {
       return json({ error: "رقم الهاتف أو كلمة المرور غير صحيحة." }, 401);
@@ -118,8 +140,10 @@ Deno.serve(async (request) => {
     }
 
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: phoneAliasEmail(phone),
       phone,
       password,
+      email_confirm: true,
       phone_confirm: true,
       user_metadata: { full_name: fullName, role: "customer" },
     });
@@ -147,7 +171,7 @@ Deno.serve(async (request) => {
     }
 
     const { data: signInData, error: signInError } =
-      await publicAuth.auth.signInWithPassword({ phone, password });
+      await signInWithPhoneOrAlias(publicAuth, phone, password);
 
     if (signInError || !signInData.session) {
       return json({ error: "تم إنشاء الحساب، لكن تعذر بدء الجلسة تلقائيًا." }, 500);
@@ -211,8 +235,10 @@ Deno.serve(async (request) => {
     }
 
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: phoneAliasEmail(phone),
       phone,
       password,
+      email_confirm: true,
       phone_confirm: true,
       app_metadata: { role },
       user_metadata: { full_name: fullName },

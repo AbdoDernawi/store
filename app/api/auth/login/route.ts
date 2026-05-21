@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { callPasswordAuthFunction } from "@/lib/auth/edge-function";
+import { phoneAliasEmail } from "@/lib/auth/phone-alias";
 import {
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
@@ -46,15 +48,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await callPasswordAuthFunction("login", { phone, password });
+  const edgeResult = await callPasswordAuthFunction("login", { phone, password });
+  const result = "error" in edgeResult
+    ? await loginWithEmailAlias(phone, password, {
+        error: edgeResult.error || "رقم الهاتف أو كلمة المرور غير صحيحة.",
+        status: edgeResult.status || 401,
+      })
+    : edgeResult;
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  const token = await signSession(result.user);
-  const fallback = roleHomePath[result.user.role];
-  const redirectTo = safeRedirectFor(body.next, result.user.role, fallback);
+  const user = { ...result.user, role: result.user.role as AppRole };
+  const token = await signSession(user);
+  const fallback = roleHomePath[user.role];
+  const redirectTo = safeRedirectFor(body.next, user.role, fallback);
   const response = NextResponse.json({ redirectTo });
 
   setSupabaseAuthCookies(response, result.tokens);
@@ -70,4 +79,59 @@ export async function POST(request: Request) {
   });
 
   return response;
+}
+
+async function loginWithEmailAlias(
+  phone: string,
+  password: string,
+  fallback: { error: string; status: number },
+) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const email = phoneAliasEmail(phone);
+
+  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey || !email) {
+    return fallback;
+  }
+
+  const publicAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: authData, error: signInError } =
+    await publicAuth.auth.signInWithPassword({ email, password });
+
+  if (signInError || !authData.user) {
+    return fallback;
+  }
+
+  const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: profile, error: profileError } = await serviceClient
+    .from("users")
+    .select("id, phone, full_name, role, is_active")
+    .eq("id", authData.user.id)
+    .maybeSingle();
+
+  if (profileError || !profile?.is_active) {
+    return { error: "هذا الحساب غير نشط.", status: 403 };
+  }
+
+  return {
+    user: {
+      id: profile.id,
+      phone: profile.phone,
+      fullName: profile.full_name,
+      role: profile.role,
+    },
+    tokens: authData.session
+      ? {
+          accessToken: authData.session.access_token,
+          refreshToken: authData.session.refresh_token,
+          expiresIn: authData.session.expires_in,
+        }
+      : undefined,
+    status: 200,
+  };
 }

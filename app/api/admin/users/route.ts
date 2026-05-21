@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { callAdminAuthFunction } from "@/lib/auth/edge-function";
+import { phoneAliasEmail } from "@/lib/auth/phone-alias";
 import { SUPABASE_ACCESS_TOKEN_COOKIE } from "@/lib/auth/supabase-token";
 import { getApiContext, jsonError, jsonOk, readJsonBody } from "@/lib/api/context";
 import type { AppRole } from "@/types/auth";
@@ -71,8 +72,9 @@ async function createUserWithServiceRole(body: CreateUserBody, actorRole: AppRol
   const phone = String(body.phone || "").trim();
   const password = String(body.password || "");
   const fullName = String(body.fullName || "").trim();
+  const email = phoneAliasEmail(phone);
 
-  if (!phone || password.length < 8 || fullName.length < 2) {
+  if (!phone || !email || password.length < 8 || fullName.length < 2) {
     return jsonError("تأكد من الاسم ورقم الهاتف وكلمة المرور.", 400);
   }
 
@@ -80,8 +82,10 @@ async function createUserWithServiceRole(body: CreateUserBody, actorRole: AppRol
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data: authData, error: authError } = await serviceClient.auth.admin.createUser({
+    email,
     phone,
     password,
+    email_confirm: true,
     phone_confirm: true,
     app_metadata: { role },
     user_metadata: { full_name: fullName },
