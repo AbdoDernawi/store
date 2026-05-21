@@ -82,6 +82,10 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("الكمية المتاحة لا تكفي لهذا الطلب.", 409, message);
   }
 
+  if (message.includes("PRODUCT_OUT_OF_STOCK") || message.includes("PRODUCT_NOT_AVAILABLE")) {
+    return jsonError("هذا المنتج غير متوفر حالياً.", 409, message);
+  }
+
   if (message.includes("PACKAGE_ALREADY_ASSIGNED")) {
     return jsonError("هذا الطلب أُسند لمندوب آخر.", 409);
   }
