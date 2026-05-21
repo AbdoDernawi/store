@@ -1,7 +1,7 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-21T08:19:46+02:00",
-  "current_phase": "7",
+  "last_updated": "2026-05-21T15:16:41+02:00",
+  "current_phase": "7b",
   "phases": {
     "1": {
       "status": "verified",
@@ -52,6 +52,11 @@
       "status": "verified",
       "completed_at": "2026-05-21T08:19:46+02:00",
       "notes": "Customer Interface phase is complete. Added mobile-first RTL customer shell with soft bottom navigation, home banners/categories/featured products, product catalog and cart using customer_price only, unavailable product blocking, saved/manual address ordering, delivery fee displayed separately, customer orders list/detail with timeline and delivery contact, editable pending orders, cancellation requests, invoice archive with text and date-range search, account address CRUD, password change, and customer APIs. Supabase migration phase7_customer_interface was applied remotely as 20260521071601 and verified with rollback SQL: catalog exposes no cost/marketer fields, zero-stock orders return PRODUCT_OUT_OF_STOCK, and available stock creates a customer pending_approval order with delivery_fee separate. Local lint/build passed."
+    },
+    "7b": {
+      "status": "verified",
+      "completed_at": "2026-05-21T15:16:41+02:00",
+      "notes": "Practical admin refinements are complete. Added configurable expense types, payment methods with automatic treasuries, expense recording from a selected treasury, category management with add/show/hide controls, and delivery agent custody management with pending handover confirmation. Supabase migration admin_finance_delivery_categories was applied remotely as 20260521121359 and verified with rollback SQL for finance and category flows. Local lint/build passed."
     },
     "8": { "status": "pending", "completed_at": null, "notes": "" },
     "9": { "status": "pending", "completed_at": null, "notes": "" }
@@ -205,6 +210,13 @@
     ,"components/customer/CustomerProductShop.tsx"
     ,"lib/customer/data.ts"
     ,"supabase/migrations/20260521055402_phase7_customer_interface.sql"
+    ,"app/(admin)/admin/categories/page.tsx"
+    ,"app/(admin)/admin/delivery-agents/page.tsx"
+    ,"app/api/admin/categories/route.ts"
+    ,"app/api/admin/categories/[id]/route.ts"
+    ,"app/api/admin/finance/expense-types/route.ts"
+    ,"app/api/admin/finance/payment-methods/route.ts"
+    ,"supabase/migrations/20260521121359_admin_finance_delivery_categories.sql"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",

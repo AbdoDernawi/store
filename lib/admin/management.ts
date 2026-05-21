@@ -7,7 +7,9 @@ export type AdminCategory = {
   name_ar: string;
   name_en: string;
   image_url: string | null;
+  sort_order?: number;
   is_active: boolean;
+  products?: Array<{ id: string }> | null;
 };
 
 export type AdminProduct = {
@@ -121,12 +123,33 @@ export type AdminTreasury = {
   updated_at: string;
 };
 
+export type AdminExpenseType = {
+  id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type AdminPaymentMethod = {
+  id: string;
+  code: string;
+  name_ar: string;
+  name_en: string | null;
+  sort_order: number;
+  is_active: boolean;
+  payment_method_treasuries?: Array<{ balance?: string | number | null; updated_at?: string | null }> | null;
+};
+
 export type AdminExpense = {
   id: string;
   type: string;
+  expense_type_id: string | null;
+  payment_method_id: string | null;
   amount: number;
   note: string | null;
   created_at: string;
+  expense_types?: { name?: string | null } | null;
+  payment_methods?: { name_ar?: string | null; code?: string | null } | null;
 };
 
 export type AdminWallet = {
@@ -139,11 +162,34 @@ export type AdminWallet = {
 export type AdminHandover = {
   id: string;
   delivery_id: string;
+  type?: string;
   total_amount: number;
   order_ids: string[] | null;
   status: string;
   created_at: string;
   users?: { full_name?: string | null } | null;
+};
+
+export type AdminDeliveryAgent = {
+  id: string;
+  phone: string;
+  full_name: string;
+  is_active: boolean;
+  activeOrders: number;
+  activeCashCustody: number;
+  completedCashCustody: number;
+  returnOrders: number;
+  pendingHandovers: AdminHandover[];
+  orders: Array<{
+    id: string;
+    order_number: number | null;
+    customer_name: string;
+    payment_method: string;
+    status: string;
+    total: number;
+    delivery_fee: number;
+    created_at: string;
+  }>;
 };
 
 export type AdminInvoice = {
@@ -304,24 +350,123 @@ export async function getAdminFinance() {
   if (!supabase) {
     return {
       treasury: [] as AdminTreasury[],
+      paymentMethods: [] as AdminPaymentMethod[],
+      expenseTypes: [] as AdminExpenseType[],
       expenses: [] as AdminExpense[],
       wallets: [] as AdminWallet[],
       handovers: [] as AdminHandover[],
     };
   }
 
-  const [treasury, expenses, wallets, handovers] = await Promise.all([
+  const [treasury, paymentMethods, expenseTypes, expenses, wallets, handovers] = await Promise.all([
     supabase.from("treasury").select("id, type, balance, updated_at").order("type"),
-    supabase.from("expenses").select("id, type, amount, note, created_at").order("created_at", { ascending: false }).limit(40),
+    supabase
+      .from("payment_methods")
+      .select("id, code, name_ar, name_en, sort_order, is_active, payment_method_treasuries(balance, updated_at)")
+      .order("sort_order"),
+    supabase.from("expense_types").select("id, name, sort_order, is_active").order("sort_order"),
+    supabase
+      .from("expenses")
+      .select("id, type, expense_type_id, payment_method_id, amount, note, created_at, expense_types(name), payment_methods(name_ar, code)")
+      .order("created_at", { ascending: false })
+      .limit(40),
     supabase.from("wallets").select("id, user_id, balance, users(full_name, phone)").order("balance", { ascending: false }).limit(30),
-    supabase.from("delivery_handovers").select("id, delivery_id, total_amount, order_ids, status, created_at, users(full_name)").order("created_at", { ascending: false }).limit(30),
+    supabase.from("delivery_handovers").select("id, delivery_id, type, total_amount, order_ids, status, created_at, users(full_name)").order("created_at", { ascending: false }).limit(30),
   ]);
 
   return {
     treasury: (treasury.data || []) as AdminTreasury[],
+    paymentMethods: normalizePaymentMethods(paymentMethods.data || []),
+    expenseTypes: (expenseTypes.data || []) as AdminExpenseType[],
     expenses: (expenses.data || []) as AdminExpense[],
     wallets: (wallets.data || []) as AdminWallet[],
     handovers: (handovers.data || []) as AdminHandover[],
+  };
+}
+
+export async function getAdminCategories() {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return { categories: [] as AdminCategory[] };
+  }
+
+  const { data } = await supabase
+    .from("categories")
+    .select("id, name_ar, name_en, image_url, sort_order, is_active, products(id)")
+    .order("sort_order");
+
+  return { categories: (data || []) as AdminCategory[] };
+}
+
+export async function getAdminDeliveryAgents() {
+  const supabase = createUserRouteClient();
+
+  if (!supabase) {
+    return { agents: [] as AdminDeliveryAgent[] };
+  }
+
+  const [users, orders, handovers] = await Promise.all([
+    supabase
+      .from("users")
+      .select("id, phone, full_name, is_active")
+      .eq("role", "delivery")
+      .order("full_name"),
+    supabase
+      .from("orders")
+      .select("id, order_number, customer_name, payment_method, status, total, delivery_fee, delivery_id, created_at")
+      .not("delivery_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(120),
+    supabase
+      .from("delivery_handovers")
+      .select("id, delivery_id, type, total_amount, order_ids, status, created_at, users(full_name)")
+      .order("created_at", { ascending: false })
+      .limit(80),
+  ]);
+
+  const orderRows = (orders.data || []) as Array<{
+    id: string;
+    order_number: number | null;
+    customer_name: string;
+    payment_method: string;
+    status: string;
+    total: string | number;
+    delivery_fee: string | number;
+    delivery_id: string;
+    created_at: string;
+  }>;
+  const handoverRows = (handovers.data || []) as AdminHandover[];
+
+  return {
+    agents: ((users.data || []) as Array<{
+      id: string;
+      phone: string;
+      full_name: string;
+      is_active: boolean;
+    }>).map((user) => {
+      const agentOrders = orderRows.filter((order) => order.delivery_id === user.id);
+      const pendingHandovers = handoverRows.filter((handover) => handover.delivery_id === user.id && handover.status === "pending");
+
+      return {
+        ...user,
+        activeCashCustody: sumOrders(agentOrders.filter((order) => order.status === "out_for_delivery" && order.payment_method === "cash")),
+        activeOrders: agentOrders.filter((order) => order.status === "out_for_delivery").length,
+        completedCashCustody: sumOrders(agentOrders.filter((order) => ["delivered", "partial_return", "full_return"].includes(order.status) && order.payment_method === "cash")),
+        orders: agentOrders.slice(0, 8).map((order) => ({
+          id: order.id,
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          payment_method: order.payment_method,
+          status: order.status,
+          total: Number(order.total || 0),
+          delivery_fee: Number(order.delivery_fee || 0),
+          created_at: order.created_at,
+        })),
+        pendingHandovers,
+        returnOrders: agentOrders.filter((order) => ["partial_return", "full_return"].includes(order.status)).length,
+      };
+    }),
   };
 }
 
@@ -410,6 +555,26 @@ function normalizeProducts(rows: unknown[]) {
       images: Array.isArray(product.images) ? product.images : [],
     };
   });
+}
+
+function normalizePaymentMethods(rows: unknown[]): AdminPaymentMethod[] {
+  return rows.map((row) => {
+    const method = row as AdminPaymentMethod & {
+      payment_method_treasuries?: Array<{ balance?: string | number | null; updated_at?: string | null }> | null;
+    };
+
+    return {
+      ...method,
+      payment_method_treasuries: (method.payment_method_treasuries || []).map((treasury) => ({
+        ...treasury,
+        balance: Number(treasury.balance || 0),
+      })),
+    };
+  });
+}
+
+function sumOrders(rows: Array<{ total: string | number }>) {
+  return rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
 }
 
 export function variantLabel(variant: AdminProductVariant) {

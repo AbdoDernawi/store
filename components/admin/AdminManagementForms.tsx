@@ -3,17 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
+  CheckCircle2,
+  CreditCard,
   ImagePlus,
   Loader2,
   Plus,
   Save,
   Send,
   Shuffle,
+  Tags,
   Upload,
 } from "lucide-react";
 import type {
   AdminCategory,
   AdminCity,
+  AdminExpenseType,
+  AdminPaymentMethod,
   AdminProductVariant,
   AdminSupplier,
   AdminWarehouse,
@@ -43,11 +48,11 @@ function useJsonAction(defaultMessage: string) {
     message: defaultMessage,
   });
 
-  async function run(endpoint: string, payload: Record<string, unknown>, success: string) {
+  async function run(endpoint: string, payload: Record<string, unknown>, success: string, method = "POST") {
     setState({ tone: "idle", message: "جاري الحفظ..." });
 
     const response = await fetch(endpoint, {
-      method: "POST",
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -459,7 +464,13 @@ export function UserCreateForm() {
   );
 }
 
-export function FinanceExpenseForm() {
+export function FinanceExpenseForm({
+  expenseTypes,
+  paymentMethods,
+}: {
+  expenseTypes: AdminExpenseType[];
+  paymentMethods: AdminPaymentMethod[];
+}) {
   const { isPending, run, state } = useJsonAction("سجل مصروفاً جديداً في الخزنة.");
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -468,7 +479,8 @@ export function FinanceExpenseForm() {
     await run(
       "/api/admin/finance/expenses",
       {
-        type: String(form.get("type") || ""),
+        expense_type_id: String(form.get("expense_type_id") || ""),
+        payment_method_id: String(form.get("payment_method_id") || ""),
         amount: Number(form.get("amount") || 0),
         note: String(form.get("note") || ""),
       },
@@ -477,15 +489,176 @@ export function FinanceExpenseForm() {
   }
 
   return (
-    <form className="grid gap-3 md:grid-cols-[1fr_0.8fr_1.4fr_auto]" onSubmit={submit}>
-      <input className={inputClass} name="type" placeholder="نوع المصروف" />
+    <form className="grid gap-3 md:grid-cols-[1fr_1fr_0.8fr_1.4fr_auto]" onSubmit={submit}>
+      <select className={inputClass} name="expense_type_id" required>
+        <option value="">نوع المصروف</option>
+        {expenseTypes.filter((type) => type.is_active).map((type) => (
+          <option key={type.id} value={type.id}>
+            {type.name}
+          </option>
+        ))}
+      </select>
+      <select className={inputClass} name="payment_method_id" required>
+        <option value="">يصرف من خزينة</option>
+        {paymentMethods.filter((method) => method.is_active).map((method) => (
+          <option key={method.id} value={method.id}>
+            {method.name_ar}
+          </option>
+        ))}
+      </select>
       <input className={inputClass} min="0" name="amount" placeholder="المبلغ" step="0.01" type="number" />
       <input className={inputClass} name="note" placeholder="ملاحظة" />
       <SubmitButton disabled={isPending} icon={Plus} label="تسجيل" />
-      <div className="md:col-span-4">
+      <div className="md:col-span-5">
         <FieldMessage state={state} />
       </div>
     </form>
+  );
+}
+
+export function ExpenseTypeForm() {
+  const { isPending, run, state } = useJsonAction("أضف أنواع المصروفات التي تظهر في القائمة.");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      "/api/admin/finance/expense-types",
+      {
+        name: String(form.get("name") || ""),
+        sort_order: Number(form.get("sort_order") || 0),
+      },
+      "تم حفظ نوع المصروف.",
+    );
+  }
+
+  return (
+    <form className="grid gap-3 md:grid-cols-[1fr_0.7fr_auto]" onSubmit={submit}>
+      <input className={inputClass} name="name" placeholder="نوع مصروف جديد" />
+      <input className={inputClass} name="sort_order" placeholder="الترتيب" type="number" />
+      <SubmitButton disabled={isPending} icon={Tags} label="إضافة نوع" />
+      <div className="md:col-span-3">
+        <FieldMessage state={state} />
+      </div>
+    </form>
+  );
+}
+
+export function PaymentMethodForm() {
+  const { isPending, run, state } = useJsonAction("أضف وسيلة دفع وسيتم إنشاء خزينة لها تلقائياً.");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      "/api/admin/finance/payment-methods",
+      {
+        code: String(form.get("code") || ""),
+        name_ar: String(form.get("name_ar") || ""),
+        name_en: String(form.get("name_en") || ""),
+        sort_order: Number(form.get("sort_order") || 0),
+      },
+      "تم حفظ وسيلة الدفع وإنشاء خزينتها.",
+    );
+  }
+
+  return (
+    <form className="grid gap-3 md:grid-cols-[0.8fr_1fr_1fr_0.6fr_auto]" onSubmit={submit}>
+      <input className={inputClass} dir="ltr" name="code" placeholder="code مثل wallet" />
+      <input className={inputClass} name="name_ar" placeholder="اسم وسيلة الدفع" />
+      <input className={inputClass} name="name_en" placeholder="اسم إنجليزي اختياري" />
+      <input className={inputClass} name="sort_order" placeholder="ترتيب" type="number" />
+      <SubmitButton disabled={isPending} icon={CreditCard} label="إضافة وسيلة" />
+      <div className="md:col-span-5">
+        <FieldMessage state={state} />
+      </div>
+    </form>
+  );
+}
+
+export function CategoryManagementForm() {
+  const { isPending, run, state } = useJsonAction("أضف قسماً جديداً للمتجر.");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await run(
+      "/api/admin/categories",
+      {
+        name_ar: String(form.get("name_ar") || ""),
+        name_en: String(form.get("name_en") || ""),
+        image_url: String(form.get("image_url") || "") || null,
+        sort_order: Number(form.get("sort_order") || 0),
+      },
+      "تم حفظ القسم.",
+    );
+  }
+
+  return (
+    <form className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_0.6fr_auto]" onSubmit={submit}>
+      <input className={inputClass} name="name_ar" placeholder="اسم القسم بالعربية" />
+      <input className={inputClass} name="name_en" placeholder="اسم القسم بالإنجليزية" />
+      <input className={inputClass} name="image_url" placeholder="رابط صورة اختياري" />
+      <input className={inputClass} name="sort_order" placeholder="ترتيب" type="number" />
+      <SubmitButton disabled={isPending} icon={Plus} label="إضافة قسم" />
+      <div className="md:col-span-5">
+        <FieldMessage state={state} />
+      </div>
+    </form>
+  );
+}
+
+export function CategoryStatusButton({
+  categoryId,
+  isActive,
+}: {
+  categoryId: string;
+  isActive: boolean;
+}) {
+  const { isPending, run } = useJsonAction("تحديث حالة القسم.");
+
+  return (
+    <button
+      className={`rounded-full px-4 py-2 text-xs font-black ring-1 transition ${
+        isActive
+          ? "bg-rose-50 text-rose-700 ring-rose-100 hover:bg-rose-100"
+          : "bg-emerald-50 text-emerald-700 ring-emerald-100 hover:bg-emerald-100"
+      }`}
+      disabled={isPending}
+      onClick={() =>
+        void run(
+          `/api/admin/categories/${categoryId}`,
+          { is_active: !isActive },
+          isActive ? "تم إخفاء القسم." : "تم تنشيط القسم.",
+          "PATCH",
+        )
+      }
+      type="button"
+    >
+      {isActive ? "إخفاء" : "تنشيط"}
+    </button>
+  );
+}
+
+export function HandoverConfirmButton({ handoverId }: { handoverId: string }) {
+  const { isPending, run } = useJsonAction("تأكيد العهدة.");
+
+  return (
+    <button
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 text-xs font-black text-white transition hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400"
+      disabled={isPending}
+      onClick={() =>
+        void run(
+          "/api/handovers/confirm",
+          { handover_id: handoverId },
+          "تم تأكيد العهدة.",
+        )
+      }
+      type="button"
+    >
+      <CheckCircle2 size={15} />
+      تأكيد
+    </button>
   );
 }
 

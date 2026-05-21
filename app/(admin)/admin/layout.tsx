@@ -3,6 +3,7 @@ import {
   BarChart3,
   Boxes,
   FileText,
+  HandCoins,
   Home,
   Landmark,
   LayoutGrid,
@@ -10,6 +11,7 @@ import {
   PackageCheck,
   Settings,
   ShoppingBag,
+  Tags,
   Truck,
   Users,
 } from "lucide-react";
@@ -20,8 +22,10 @@ const navItems = [
   { href: "/admin/dashboard", label: "الداشبورد", icon: Home },
   { href: "/admin/orders", label: "الطلبيات", icon: ShoppingBag },
   { href: "/admin/products", label: "المنتجات", icon: PackageCheck },
+  { href: "/admin/categories", label: "الأقسام", icon: Tags },
   { href: "/admin/warehouses", label: "المخازن", icon: Boxes },
   { href: "/admin/suppliers", label: "الموردين", icon: Truck },
+  { href: "/admin/delivery-agents", label: "المندوبين", icon: HandCoins },
   { href: "/admin/users", label: "المستخدمين", icon: Users },
   { href: "/admin/finance", label: "المالية", icon: Landmark },
   { href: "/admin/invoices", label: "الفواتير", icon: FileText },
@@ -51,8 +55,8 @@ export default async function AdminLayout({
   return (
     <main className="min-h-screen bg-[#f7faf8] text-slate-950">
       <div className="mx-auto flex min-h-screen max-w-[1500px] gap-4 px-3 py-3 sm:px-5 sm:py-5">
-        <aside className="hidden w-72 shrink-0 flex-col rounded-lg border border-emerald-100 bg-white/92 p-3 shadow-sm shadow-emerald-950/5 lg:flex">
-          <Link className="mb-5 flex items-center gap-3 rounded-lg bg-emerald-50 px-4 py-4" href="/admin/dashboard">
+        <aside className="hidden w-72 shrink-0 flex-col rounded-[1.35rem] border border-emerald-100 bg-white/92 p-3 shadow-sm shadow-emerald-950/5 lg:flex">
+          <Link className="mb-5 flex items-center gap-3 rounded-[1.15rem] bg-emerald-50 px-4 py-4" href="/admin/dashboard">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white">
               <BarChart3 size={22} strokeWidth={2.2} />
             </span>
@@ -81,7 +85,7 @@ export default async function AdminLayout({
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col gap-4">
-          <header className="rounded-lg border border-slate-200 bg-white/92 px-4 py-3 shadow-sm shadow-slate-950/5">
+          <header className="rounded-[1.35rem] border border-slate-200 bg-white/92 px-4 py-3 shadow-sm shadow-slate-950/5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-xs font-bold text-emerald-700">صباح العمل الهادئ</p>
@@ -113,7 +117,7 @@ export default async function AdminLayout({
             </div>
 
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
-              {navItems.slice(0, 5).map((item) => (
+              {navItems.map((item) => (
                 <Link
                   className="shrink-0 rounded-full bg-slate-50 px-4 py-2 text-xs font-black text-slate-600 ring-1 ring-slate-100"
                   href={item.href}
