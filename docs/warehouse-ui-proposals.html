@@ -1,0 +1,1534 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مقترحات تطوير واجهة المخازن</title>
+  <style>
+    :root {
+      --bg: #f6faf8;
+      --panel: #ffffff;
+      --panel-soft: #f1f7f4;
+      --ink: #10231c;
+      --muted: #6a7b73;
+      --line: #dce9e3;
+      --accent: #13966b;
+      --accent-soft: #dff5ec;
+      --sky: #eaf5ff;
+      --rose: #fff0f2;
+      --amber: #fff7df;
+      --shadow: 0 18px 42px rgba(16, 35, 28, 0.08);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top right, rgba(19, 150, 107, 0.12), transparent 34rem),
+        linear-gradient(180deg, #fbfefd 0%, var(--bg) 100%);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .page {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+      gap: 20px;
+      align-items: stretch;
+      min-height: 420px;
+    }
+
+    .hero-copy,
+    .board-card,
+    .screen,
+    .proposal-card,
+    .drawer,
+    .basket,
+    .metric,
+    .filter-bar,
+    .table-card {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      border-radius: 32px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #08724f;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin-top: 20px;
+      font-size: 42px;
+      line-height: 1.22;
+      font-weight: 950;
+    }
+
+    .lead {
+      margin-top: 18px;
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.9;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .pill,
+    .tab,
+    .soft-button,
+    .primary-button,
+    .icon-button,
+    .status,
+    .chip {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .pill {
+      background: #f4f8f6;
+      color: #39564a;
+      padding: 9px 13px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .board-card {
+      border-radius: 32px;
+      overflow: hidden;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      padding: 18px;
+    }
+
+    .board-card img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      min-height: 420px;
+    }
+
+    .hero-shop {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 12px;
+      height: 100%;
+      min-height: 386px;
+    }
+
+    .shop-window,
+    .mini-cart,
+    .category-sidebar,
+    .store-product,
+    .action-context {
+      border: 1px solid var(--line);
+      background: #fbfefd;
+      border-radius: 24px;
+    }
+
+    .shop-window {
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .shop-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .category-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+    }
+
+    .category-row .chip.active,
+    .category-button.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .mini-products {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mini-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .mini-card .thumb {
+      width: 100%;
+      height: 92px;
+      margin-bottom: 10px;
+    }
+
+    .mini-cart {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #f4faf7;
+    }
+
+    .shop-layout {
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr) 360px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .category-sidebar {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      position: sticky;
+      top: 86px;
+    }
+
+    .category-button {
+      min-height: 42px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #425f54;
+      padding: 0 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 950;
+      text-align: right;
+    }
+
+    .shop-toolbar {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 150px 150px;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .store-product {
+      padding: 12px;
+      background: #fff;
+      box-shadow: none;
+    }
+
+    .store-product .thumb {
+      width: 100%;
+      height: 132px;
+      margin-bottom: 12px;
+      border-radius: 22px;
+    }
+
+    .store-product strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 950;
+    }
+
+    .store-product p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .variant-picker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .quantity-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .action-context {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+      box-shadow: none;
+    }
+
+    .operation-card {
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 12px;
+    }
+
+    .operation-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .operation-card strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .cart-footer {
+      border-top: 1px solid #dce9e3;
+      margin-top: 12px;
+      padding-top: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 16px 0;
+      margin: 12px 0;
+      background: linear-gradient(180deg, rgba(246, 250, 248, 0.96), rgba(246, 250, 248, 0.86));
+      backdrop-filter: blur(12px);
+    }
+
+    .tab {
+      cursor: pointer;
+      background: #fff;
+      color: #52685f;
+      border-color: var(--line);
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 950;
+      transition: 0.18s ease;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 26px rgba(19, 150, 107, 0.22);
+    }
+
+    .screen {
+      display: none;
+      border-radius: 32px;
+      padding: 22px;
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .screen-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .screen-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: #08724f;
+      font-weight: 950;
+      font-size: 18px;
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 950;
+    }
+
+    .hint {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.7;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: none;
+      background: #fff;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 10px;
+      font-size: 24px;
+      font-weight: 950;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 7px;
+      color: #789087;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .warehouse-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .warehouse-item {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: #fff;
+      padding: 14px;
+    }
+
+    .warehouse-item.active {
+      border-color: #9edbc5;
+      background: #f0fbf6;
+    }
+
+    .warehouse-item strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .progress {
+      height: 8px;
+      margin-top: 12px;
+      border-radius: 999px;
+      background: #e8efeb;
+      overflow: hidden;
+    }
+
+    .progress i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .table-card {
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    .filter-bar {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(120px, 0.8fr)) auto;
+      gap: 10px;
+      border-radius: 24px;
+      padding: 12px;
+      box-shadow: none;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f8fbfa;
+      color: var(--ink);
+      outline: none;
+      padding: 0 15px;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .primary-button,
+    .soft-button,
+    .icon-button {
+      cursor: pointer;
+      height: 46px;
+      border: 0;
+      padding: 0 16px;
+      font-weight: 950;
+      transition: 0.18s ease;
+    }
+
+    .primary-button {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(19, 150, 107, 0.22);
+    }
+
+    .soft-button,
+    .icon-button {
+      background: #f2f7f5;
+      color: #315548;
+      border: 1px solid var(--line);
+    }
+
+    .primary-button:hover,
+    .soft-button:hover,
+    .icon-button:hover,
+    .tab:hover {
+      transform: translateY(-1px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 14px;
+      text-align: right;
+      border-bottom: 1px solid #edf3f0;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    th {
+      color: #6b8078;
+      font-size: 12px;
+      font-weight: 950;
+      background: #fbfdfc;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .product-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background:
+        linear-gradient(135deg, rgba(19, 150, 107, 0.2), rgba(255, 255, 255, 0.1)),
+        var(--accent-soft);
+      border: 1px solid #cfe8dd;
+      overflow: hidden;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .thumb::before {
+      content: "";
+      position: absolute;
+      inset: 12px 10px 8px;
+      border-radius: 14px 14px 10px 10px;
+      background: rgba(19, 150, 107, 0.58);
+    }
+
+    .thumb::after {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 8px;
+      top: 10px;
+      right: 14px;
+      border: 3px solid rgba(19, 150, 107, 0.55);
+      border-bottom: 0;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .product-cell strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 950;
+    }
+
+    .product-cell span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 5px 10px;
+      background: #f4f8f6;
+      color: #496158;
+      border-color: #e3ece7;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px #cbd9d3;
+      margin-left: 6px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 950;
+      border: 1px solid;
+    }
+
+    .ok {
+      background: var(--accent-soft);
+      color: #08724f;
+      border-color: #bdebd9;
+    }
+
+    .low {
+      background: var(--amber);
+      color: #8a6412;
+      border-color: #f5dda0;
+    }
+
+    .stop {
+      background: var(--rose);
+      color: #a73a4b;
+      border-color: #f3c1c9;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 14px;
+    }
+
+    .basket {
+      border-radius: 26px;
+      padding: 16px;
+      box-shadow: none;
+      align-self: start;
+      position: sticky;
+      top: 86px;
+    }
+
+    .basket-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #edf3f0;
+    }
+
+    .basket-row:last-child {
+      border-bottom: 0;
+    }
+
+    .stepper {
+      display: inline-grid;
+      grid-template-columns: 34px 42px 34px;
+      height: 34px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .stepper button {
+      height: 100%;
+      border: 0;
+      background: #f4f8f6;
+      cursor: pointer;
+      color: #315548;
+      font-weight: 950;
+    }
+
+    .stepper span {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .transfer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .proposal-card {
+      border-radius: 26px;
+      padding: 18px;
+      box-shadow: none;
+    }
+
+    .proposal-card h3 {
+      font-size: 16px;
+      font-weight: 950;
+    }
+
+    .proposal-card p {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.75;
+    }
+
+    .edit-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 14px;
+    }
+
+    .drawer {
+      border-radius: 28px;
+      padding: 18px;
+      box-shadow: none;
+    }
+
+    .variant-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 12px;
+      margin-top: 10px;
+      background: #fff;
+    }
+
+    .locked {
+      background: #fff9f0;
+      border-color: #f0d6a6;
+    }
+
+    .danger-button {
+      height: 36px;
+      border: 1px solid #f3c1c9;
+      border-radius: 999px;
+      background: #fff0f2;
+      color: #a73a4b;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .danger-button[disabled] {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .mobile-preview {
+      width: 300px;
+      min-height: 610px;
+      border: 10px solid #163029;
+      border-radius: 38px;
+      padding: 14px;
+      background: #f7fbf9;
+      box-shadow: 0 18px 48px rgba(16, 35, 28, 0.18);
+      margin-inline: auto;
+    }
+
+    .mobile-card {
+      border-radius: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 14px;
+      margin-top: 10px;
+    }
+
+    .bottom-bar {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 8px;
+    }
+
+    .bottom-bar span {
+      text-align: center;
+      border-radius: 16px;
+      padding: 8px 4px;
+      font-size: 11px;
+      font-weight: 950;
+      color: #678178;
+    }
+
+    .bottom-bar span.active {
+      background: var(--accent-soft);
+      color: #08724f;
+    }
+
+    .note {
+      margin-top: 16px;
+      border: 1px dashed #b9dccc;
+      background: #f2fbf7;
+      border-radius: 22px;
+      padding: 14px;
+      color: #2b5d49;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 1100px) {
+      .hero,
+      .layout,
+      .split,
+      .edit-layout,
+      .hero-shop,
+      .shop-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-4,
+      .transfer-grid,
+      .product-grid,
+      .action-context {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .basket {
+        position: static;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        width: min(100% - 20px, 1440px);
+        padding-top: 16px;
+      }
+
+      h1 {
+        font-size: 30px;
+      }
+
+      .hero-copy,
+      .screen {
+        border-radius: 24px;
+        padding: 18px;
+      }
+
+      .screen-head {
+        flex-direction: column;
+      }
+
+      .grid-4,
+      .filter-bar,
+      .transfer-grid,
+      .product-grid,
+      .action-context,
+      .shop-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      table,
+      thead,
+      tbody,
+      th,
+      td,
+      tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        border-bottom: 1px solid #edf3f0;
+        padding: 10px;
+      }
+
+      td {
+        border-bottom: 0;
+        padding: 8px 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-copy">
+        <div>
+          <span class="eyebrow">تصور واجهة المخازن الجديدة</span>
+          <h1>مخازن تعمل مثل المتجر: اختر من الأقسام، املأ السلة، ثم نفذ الإجراء</h1>
+          <p class="lead">
+            الهدف أن يتعامل المدير مع المنتجات كما يتعامل الزبون مع المتجر: يتنقل بين الأقسام، يختار اللون والمقاس والكمية، ثم يحول السلة أو ينفذ عليها أي إجراء مخزني دفعة واحدة.
+          </p>
+          <div class="hero-actions">
+            <span class="pill">تصفح كالمتجر</span>
+            <span class="pill">سلة عمليات</span>
+            <span class="pill">تعديل آمن للخيارات</span>
+            <span class="pill">بدون خريطة</span>
+          </div>
+        </div>
+
+        <div class="note">
+          المقترح العملي: زر أي عملية مخزنية يفتح صفحة أو مودال اختيار منتجات شبيه بالمتجر، مع سلة جانبية وقيود كمية واضحة حسب المخزن المصدر.
+        </div>
+      </div>
+
+      <div class="board-card">
+        <div class="hero-shop">
+          <div class="shop-window">
+            <div class="shop-top">
+              <div>
+                <h2>اختيار منتجات للتحويل</h2>
+                <p class="hint">من مخزن طرابلس إلى بنغازي</p>
+              </div>
+              <button class="soft-button">تغيير العملية</button>
+            </div>
+            <div class="category-row">
+              <span class="chip active">الكل</span>
+              <span class="chip">الحقائب</span>
+              <span class="chip">الأحذية</span>
+              <span class="chip">التقنية</span>
+              <span class="chip">العروض</span>
+            </div>
+            <div class="mini-products">
+              <div class="mini-card">
+                <span class="thumb"></span>
+                <strong>حقيبة سفر ناعمة</strong>
+                <p class="hint">بيج · M · متوفر 84</p>
+                <button class="primary-button" style="width: 100%; margin-top: 10px;">إضافة</button>
+              </div>
+              <div class="mini-card">
+                <span class="thumb"></span>
+                <strong>حذاء رياضي مرن</strong>
+                <p class="hint">أسود · 42 · متوفر 6</p>
+                <button class="primary-button" style="width: 100%; margin-top: 10px;">إضافة</button>
+              </div>
+            </div>
+          </div>
+
+          <aside class="mini-cart">
+            <div>
+              <span class="eyebrow">سلة العملية</span>
+              <h2 style="margin-top: 12px;">3 منتجات</h2>
+              <p class="hint">20 قطعة جاهزة للتحويل</p>
+            </div>
+            <div>
+              <div class="basket-row"><strong>حقيبة سفر</strong><span class="chip">12</span></div>
+              <div class="basket-row"><strong>حذاء رياضي</strong><span class="chip">3</span></div>
+              <div class="basket-row"><strong>ساعة ذكية</strong><span class="chip">5</span></div>
+              <button class="primary-button" style="width: 100%; margin-top: 14px;">تأكيد التحويل</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="مقترحات المخازن">
+      <button class="tab active" data-tab="overview">نظرة عامة</button>
+      <button class="tab" data-tab="filters">فلترة وتصفح</button>
+      <button class="tab" data-tab="transfer">اختيار كالمتجر</button>
+      <button class="tab" data-tab="edit">تعديل المنتج</button>
+      <button class="tab" data-tab="mobile">الموبايل</button>
+    </nav>
+
+    <section class="screen active" id="overview">
+      <div class="screen-head">
+        <div class="screen-title">
+          <span class="mark">1</span>
+          <div>
+            <h2>لوحة المخازن اليومية</h2>
+            <p class="hint">بدون خريطة. فقط أرقام مختصرة، مخازن، وتنبيهات تساعد على القرار بسرعة.</p>
+          </div>
+        </div>
+        <button class="primary-button">عملية تحويل جديدة</button>
+      </div>
+
+      <div class="grid-4">
+        <div class="metric"><span>إجمالي المتوفر</span><strong>12,480</strong><small>كل المخازن</small></div>
+        <div class="metric"><span>محجوز للطلبات</span><strong>1,126</strong><small>يحتاج متابعة</small></div>
+        <div class="metric"><span>منخفض المخزون</span><strong>38</strong><small>منتج وخيار</small></div>
+        <div class="metric"><span>حركات اليوم</span><strong>74</strong><small>تحويل واستلام</small></div>
+      </div>
+
+      <div class="layout">
+        <aside class="warehouse-list">
+          <div class="warehouse-item active">
+            <strong>تحويل مخزون</strong>
+            <p class="hint">يفتح اختيار منتجات كالمتجر، ثم سلة تحويل جماعية.</p>
+          </div>
+          <div class="warehouse-item">
+            <strong>تعديل كميات</strong>
+            <p class="hint">نفس اختيار السلة، لكن الإجراء النهائي زيادة أو نقصان.</p>
+          </div>
+          <div class="warehouse-item">
+            <strong>جرد سريع</strong>
+            <p class="hint">فلترة حسب القسم والمخزن ثم تحديث عدة خيارات دفعة واحدة.</p>
+          </div>
+        </aside>
+
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>المنتج</th>
+                <th>الخيار</th>
+                <th>متوفر</th>
+                <th>محجوز</th>
+                <th>الحالة</th>
+                <th>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="product-cell"><span class="thumb"></span><div><strong>حقيبة سفر ناعمة</strong><span>قسم الحقائب</span></div></div></td>
+                <td><div class="chips"><span class="chip"><i class="dot" style="background:#c9a779"></i>بيج</span><span class="chip">M</span></div></td>
+                <td>84</td>
+                <td>12</td>
+                <td><span class="status ok">مستقر</span></td>
+                <td><button class="soft-button">تعديل</button></td>
+              </tr>
+              <tr>
+                <td><div class="product-cell"><span class="thumb"></span><div><strong>حذاء رياضي مرن</strong><span>قسم الأحذية</span></div></div></td>
+                <td><div class="chips"><span class="chip"><i class="dot" style="background:#111827"></i>أسود</span><span class="chip">42</span></div></td>
+                <td>6</td>
+                <td>3</td>
+                <td><span class="status low">قريب النفاد</span></td>
+                <td><button class="soft-button">تعديل</button></td>
+              </tr>
+              <tr>
+                <td><div class="product-cell"><span class="thumb"></span><div><strong>ساعة ذكية خفيفة</strong><span>قسم التقنية</span></div></div></td>
+                <td><div class="chips"><span class="chip"><i class="dot" style="background:#94a3b8"></i>فضي</span><span class="chip">One size</span></div></td>
+                <td>0</td>
+                <td>0</td>
+                <td><span class="status stop">نفد</span></td>
+                <td><button class="soft-button">تعديل</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="filters">
+      <div class="screen-head">
+        <div class="screen-title">
+          <span class="mark">2</span>
+          <div>
+            <h2>فلترة المنتجات داخل المخزون</h2>
+            <p class="hint">الفلتر يكون قبل الجدول، ويبحث في المنتج والخيار والمخزن والحالة.</p>
+          </div>
+        </div>
+        <button class="soft-button" id="clearFilters">تصفير الفلاتر</button>
+      </div>
+
+      <div class="filter-bar">
+        <input class="field" id="searchInput" placeholder="بحث باسم المنتج أو اللون" />
+        <select class="field" id="categoryFilter">
+          <option value="">كل الأقسام</option>
+          <option>الحقائب</option>
+          <option>الأحذية</option>
+          <option>التقنية</option>
+        </select>
+        <select class="field" id="warehouseFilter">
+          <option value="">كل المخازن</option>
+          <option>طرابلس</option>
+          <option>بنغازي</option>
+          <option>مصراتة</option>
+        </select>
+        <select class="field" id="stockFilter">
+          <option value="">كل الحالات</option>
+          <option value="ok">مستقر</option>
+          <option value="low">قريب النفاد</option>
+          <option value="stop">نفد</option>
+        </select>
+        <select class="field">
+          <option>كل المقاسات</option>
+          <option>S</option>
+          <option>M</option>
+          <option>42</option>
+        </select>
+        <button class="primary-button">تطبيق</button>
+      </div>
+
+      <div class="table-card">
+        <table id="inventoryTable">
+          <thead>
+            <tr>
+              <th>المنتج</th>
+              <th>القسم</th>
+              <th>المخزن</th>
+              <th>اللون والمقاس</th>
+              <th>متوفر</th>
+              <th>محجوز</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-name="حقيبة سفر ناعمة بيج" data-category="الحقائب" data-warehouse="طرابلس" data-status="ok">
+              <td><div class="product-cell"><span class="thumb"></span><div><strong>حقيبة سفر ناعمة</strong><span>SKU-BAG-01</span></div></div></td>
+              <td>الحقائب</td>
+              <td>طرابلس</td>
+              <td><div class="chips"><span class="chip"><i class="dot" style="background:#c9a779"></i>بيج</span><span class="chip">M</span></div></td>
+              <td>84</td>
+              <td>12</td>
+              <td><span class="status ok">مستقر</span></td>
+              <td><button class="soft-button">تعديل</button></td>
+            </tr>
+            <tr data-name="حذاء رياضي مرن أسود" data-category="الأحذية" data-warehouse="بنغازي" data-status="low">
+              <td><div class="product-cell"><span class="thumb"></span><div><strong>حذاء رياضي مرن</strong><span>SKU-SHOE-42</span></div></div></td>
+              <td>الأحذية</td>
+              <td>بنغازي</td>
+              <td><div class="chips"><span class="chip"><i class="dot" style="background:#111827"></i>أسود</span><span class="chip">42</span></div></td>
+              <td>6</td>
+              <td>3</td>
+              <td><span class="status low">قريب النفاد</span></td>
+              <td><button class="soft-button">تعديل</button></td>
+            </tr>
+            <tr data-name="ساعة ذكية خفيفة فضي" data-category="التقنية" data-warehouse="مصراتة" data-status="stop">
+              <td><div class="product-cell"><span class="thumb"></span><div><strong>ساعة ذكية خفيفة</strong><span>SKU-WATCH-S</span></div></div></td>
+              <td>التقنية</td>
+              <td>مصراتة</td>
+              <td><div class="chips"><span class="chip"><i class="dot" style="background:#94a3b8"></i>فضي</span><span class="chip">One size</span></div></td>
+              <td>0</td>
+              <td>0</td>
+              <td><span class="status stop">نفد</span></td>
+              <td><button class="soft-button">تعديل</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="screen" id="transfer">
+      <div class="screen-head">
+        <div class="screen-title">
+          <span class="mark">3</span>
+          <div>
+            <h2>اختيار المنتجات كأنه متجر داخلي</h2>
+            <p class="hint">هذه الصفحة أو المودال تستخدم لكل إجراء مخزني: تحويل، تعديل كمية، جرد، أو استلام. الفرق يكون في شريط الإجراء النهائي.</p>
+          </div>
+        </div>
+        <button class="primary-button">اعتماد السلة</button>
+      </div>
+
+      <div class="action-context">
+        <div class="operation-card">
+          <span>نوع العملية</span>
+          <strong>تحويل بين المخازن</strong>
+        </div>
+        <div class="operation-card">
+          <span>المخزن المصدر</span>
+          <strong>طرابلس الرئيسي</strong>
+        </div>
+        <div class="operation-card">
+          <span>المخزن الوجهة</span>
+          <strong>بنغازي</strong>
+        </div>
+        <div class="operation-card">
+          <span>القيد</span>
+          <strong>لا تتجاوز المتوفر</strong>
+        </div>
+      </div>
+
+      <div class="shop-layout">
+        <aside class="category-sidebar">
+          <button class="category-button active">كل المنتجات</button>
+          <button class="category-button">الحقائب</button>
+          <button class="category-button">الأحذية</button>
+          <button class="category-button">التقنية</button>
+          <button class="category-button">العناية</button>
+          <button class="category-button">منخفض المخزون</button>
+        </aside>
+
+        <div>
+          <div class="shop-toolbar">
+            <input class="field" placeholder="ابحث في منتجات مخزن طرابلس" />
+            <select class="field">
+              <option>كل الألوان</option>
+              <option>بيج</option>
+              <option>أسود</option>
+              <option>فضي</option>
+            </select>
+            <select class="field">
+              <option>كل المقاسات</option>
+              <option>M</option>
+              <option>L</option>
+              <option>42</option>
+            </select>
+          </div>
+
+          <div class="product-grid">
+            <article class="store-product">
+              <span class="thumb"></span>
+              <strong>حقيبة سفر ناعمة</strong>
+              <p>الحقائب · متوفر في المصدر: 84</p>
+              <div class="variant-picker">
+                <span class="chip active"><i class="dot" style="background:#c9a779"></i>بيج</span>
+                <span class="chip"><i class="dot" style="background:#111827"></i>أسود</span>
+                <span class="chip">M</span>
+                <span class="chip">L</span>
+              </div>
+              <div class="quantity-row">
+                <div class="stepper"><button>-</button><span>12</span><button>+</button></div>
+                <button class="primary-button">إضافة</button>
+              </div>
+            </article>
+
+            <article class="store-product">
+              <span class="thumb"></span>
+              <strong>حذاء رياضي مرن</strong>
+              <p>الأحذية · متوفر في المصدر: 6</p>
+              <div class="variant-picker">
+                <span class="chip active"><i class="dot" style="background:#111827"></i>أسود</span>
+                <span class="chip">41</span>
+                <span class="chip active">42</span>
+                <span class="chip">43</span>
+              </div>
+              <div class="quantity-row">
+                <div class="stepper"><button>-</button><span>3</span><button>+</button></div>
+                <button class="primary-button">إضافة</button>
+              </div>
+            </article>
+
+            <article class="store-product">
+              <span class="thumb"></span>
+              <strong>ساعة ذكية خفيفة</strong>
+              <p>التقنية · متوفر في المصدر: 18</p>
+              <div class="variant-picker">
+                <span class="chip active"><i class="dot" style="background:#94a3b8"></i>فضي</span>
+                <span class="chip">One size</span>
+              </div>
+              <div class="quantity-row">
+                <div class="stepper"><button>-</button><span>5</span><button>+</button></div>
+                <button class="primary-button">إضافة</button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <aside class="basket">
+          <div class="screen-title">
+            <span class="mark">↔</span>
+            <div>
+              <h2>سلة العملية</h2>
+              <p class="hint">3 منتجات · 20 قطعة</p>
+            </div>
+          </div>
+
+          <div class="basket-row">
+            <div>
+              <strong>حقيبة سفر ناعمة</strong>
+              <p class="hint">بيج · M · طرابلس ← بنغازي</p>
+            </div>
+            <div class="stepper"><button>-</button><span>12</span><button>+</button></div>
+          </div>
+          <div class="basket-row">
+            <div>
+              <strong>حذاء رياضي مرن</strong>
+              <p class="hint">أسود · 42 · طرابلس ← بنغازي</p>
+            </div>
+            <div class="stepper"><button>-</button><span>3</span><button>+</button></div>
+          </div>
+          <div class="basket-row">
+            <div>
+              <strong>ساعة ذكية خفيفة</strong>
+              <p class="hint">فضي · One size · طرابلس ← بنغازي</p>
+            </div>
+            <div class="stepper"><button>-</button><span>5</span><button>+</button></div>
+          </div>
+
+          <div class="cart-footer">
+            <select class="field">
+              <option>مخزن الوجهة: بنغازي</option>
+              <option>مخزن الوجهة: مصراتة</option>
+            </select>
+            <input class="field" placeholder="ملاحظة اختيارية" />
+            <button class="primary-button">تأكيد التحويل</button>
+            <button class="soft-button">حفظ كمسودة</button>
+          </div>
+
+          <div class="note">الفكرة التقنية: العملية الرئيسية واحدة، وتحتها عناصر سلة متعددة. كل عنصر مرتبط بـ product_variant_id وsource_warehouse_id وtarget_warehouse_id والكمية.</div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" id="edit">
+      <div class="screen-head">
+        <div class="screen-title">
+          <span class="mark">4</span>
+          <div>
+            <h2>تعديل المنتج بقيود واضحة</h2>
+            <p class="hint">زر التعديل موجود في جدول المخزون، والقيود تظهر قبل محاولة الحذف.</p>
+          </div>
+        </div>
+        <button class="primary-button">حفظ التعديلات</button>
+      </div>
+
+      <div class="edit-layout">
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>الخيار</th>
+                <th>المخازن المتأثرة</th>
+                <th>متوفر</th>
+                <th>محجوز</th>
+                <th>الحذف</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="chips"><span class="chip"><i class="dot" style="background:#c9a779"></i>بيج</span><span class="chip">M</span></div></td>
+                <td>طرابلس، بنغازي</td>
+                <td>84</td>
+                <td>12</td>
+                <td><button class="danger-button" disabled>مقفل</button></td>
+              </tr>
+              <tr>
+                <td><div class="chips"><span class="chip"><i class="dot" style="background:#111827"></i>أسود</span><span class="chip">L</span></div></td>
+                <td>لا يوجد</td>
+                <td>0</td>
+                <td>0</td>
+                <td><button class="danger-button">حذف</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <aside class="drawer">
+          <h2>تعديل حقيبة سفر ناعمة</h2>
+          <p class="hint">القيم الأساسية قابلة للتعديل، والخيارات التي عليها مخزون لا تحذف مباشرة.</p>
+
+          <div class="variant-row locked">
+            <div>
+              <strong>بيج · M</strong>
+              <p class="hint">لا يمكن حذف خيار عليه مخزون أو حجز. يمكن تعطيله من البيع أو تحويل المخزون أولا.</p>
+            </div>
+            <button class="soft-button">تعطيل البيع</button>
+          </div>
+
+          <div class="variant-row">
+            <div>
+              <strong>أسود · L</strong>
+              <p class="hint">لا يوجد مخزون ولا حجز على هذا الخيار.</p>
+            </div>
+            <button class="danger-button">حذف</button>
+          </div>
+
+          <div class="note">
+            قاعدة مهمة: حذف اللون أو المقاس مسموح فقط إذا كانت الكمية المتوفرة والمحجوزة تساوي صفر في كل المخازن. غير ذلك يظهر خيار تحويل المخزون أو تعطيل البيع.
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" id="mobile">
+      <div class="screen-head">
+        <div class="screen-title">
+          <span class="mark">5</span>
+          <div>
+            <h2>تجربة الموبايل للمخازن</h2>
+            <p class="hint">نفس تجربة المتجر: أقسام، بطاقات منتجات، وزر سلة ثابت بأسفل الشاشة.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mobile-preview">
+        <span class="eyebrow">المخازن</span>
+        <h2 style="margin-top: 12px;">اختيار للتحويل</h2>
+        <input class="field" style="width: 100%; margin-top: 12px;" placeholder="بحث سريع" />
+        <div class="category-row" style="margin-top: 10px;">
+          <span class="chip active">الكل</span>
+          <span class="chip">الحقائب</span>
+          <span class="chip">الأحذية</span>
+        </div>
+
+        <div class="mobile-card">
+          <div class="product-cell"><span class="thumb"></span><div><strong>حقيبة سفر ناعمة</strong><span>بيج · M</span></div></div>
+          <div class="chips" style="margin-top: 12px;"><span class="chip">متوفر 84</span><span class="chip">محجوز 12</span></div>
+          <button class="primary-button" style="width: 100%; margin-top: 12px;">إضافة للتحويل</button>
+        </div>
+
+        <div class="mobile-card">
+          <div class="product-cell"><span class="thumb"></span><div><strong>حذاء رياضي مرن</strong><span>أسود · 42</span></div></div>
+          <div class="chips" style="margin-top: 12px;"><span class="chip">متوفر 6</span><span class="chip">منخفض</span></div>
+          <button class="soft-button" style="width: 100%; margin-top: 12px;">تعديل</button>
+        </div>
+
+        <div class="bottom-bar">
+          <span class="active">الأقسام</span>
+          <span>السلة 15</span>
+          <span>حركات</span>
+          <span>إعدادات</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll(".tab");
+    const screens = document.querySelectorAll(".screen");
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.forEach((item) => item.classList.remove("active"));
+        screens.forEach((screen) => screen.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
+      });
+    });
+
+    const searchInput = document.getElementById("searchInput");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const warehouseFilter = document.getElementById("warehouseFilter");
+    const stockFilter = document.getElementById("stockFilter");
+    const clearFilters = document.getElementById("clearFilters");
+    const rows = Array.from(document.querySelectorAll("#inventoryTable tbody tr"));
+
+    function applyFilters() {
+      const search = (searchInput.value || "").trim().toLowerCase();
+      const category = categoryFilter.value;
+      const warehouse = warehouseFilter.value;
+      const status = stockFilter.value;
+
+      rows.forEach((row) => {
+        const matchesSearch = !search || row.dataset.name.toLowerCase().includes(search);
+        const matchesCategory = !category || row.dataset.category === category;
+        const matchesWarehouse = !warehouse || row.dataset.warehouse === warehouse;
+        const matchesStatus = !status || row.dataset.status === status;
+        row.style.display = matchesSearch && matchesCategory && matchesWarehouse && matchesStatus ? "" : "none";
+      });
+    }
+
+    [searchInput, categoryFilter, warehouseFilter, stockFilter].forEach((field) => {
+      field.addEventListener("input", applyFilters);
+      field.addEventListener("change", applyFilters);
+    });
+
+    clearFilters.addEventListener("click", () => {
+      searchInput.value = "";
+      categoryFilter.value = "";
+      warehouseFilter.value = "";
+      stockFilter.value = "";
+      applyFilters();
+    });
+  </script>
+</body>
+</html>

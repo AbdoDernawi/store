@@ -82,6 +82,28 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("الكمية المتاحة لا تكفي لهذا الطلب.", 409, message);
   }
 
+  if (message.includes("INSUFFICIENT_SOURCE_STOCK")) {
+    return jsonError("الكمية المتاحة في المخزن المصدر لا تكفي لإتمام العملية.", 409, message);
+  }
+
+  if (
+    message.includes("INVALID_TRANSFER") ||
+    message.includes("INVALID_TRANSFER_ITEM") ||
+    message.includes("NO_TRANSFER_ITEMS") ||
+    message.includes("INVALID_ADJUST_ITEM") ||
+    message.includes("NO_ADJUST_ITEMS")
+  ) {
+    return jsonError("راجع سلة المنتجات والمخازن ثم حاول من جديد.", 400, message);
+  }
+
+  if (message.includes("VARIANT_HAS_STOCK")) {
+    return jsonError("لا يمكن حذف لون أو مقاس عليه مخزون أو كمية محجوزة.", 409, message);
+  }
+
+  if (message.includes("VARIANT_USED_IN_ORDERS")) {
+    return jsonError("لا يمكن حذف خيار مستخدم في طلبات سابقة. يمكن تعطيله من البيع بدلاً من حذفه.", 409, message);
+  }
+
   if (message.includes("PRODUCT_OUT_OF_STOCK") || message.includes("PRODUCT_NOT_AVAILABLE")) {
     return jsonError("هذا المنتج غير متوفر حالياً.", 409, message);
   }

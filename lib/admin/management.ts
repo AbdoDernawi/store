@@ -39,7 +39,28 @@ export type AdminProductVariant = {
   type: string | null;
   image_url: string | null;
   extra_price: number;
-  products?: { name_ar?: string | null } | null;
+  is_active?: boolean;
+  products?: {
+    id?: string;
+    category_id?: string | null;
+    name_ar?: string | null;
+    name_en?: string | null;
+    images?: Array<{ thumb?: string; medium?: string; large?: string }>;
+    cost_price?: number | string | null;
+    customer_price?: number | string | null;
+    marketer_price?: number | string | null;
+    marketer_commission?: number | string | null;
+    low_stock_threshold?: number | null;
+    is_active?: boolean;
+    categories?: { name_ar?: string | null } | null;
+  } | null;
+  warehouse_inventory?: Array<{
+    warehouse_id: string;
+    quantity_available: number | string;
+    quantity_reserved: number | string;
+    low_stock_threshold: number;
+    warehouses?: { name?: string | null } | null;
+  }>;
 };
 
 export type AdminCity = {
@@ -261,7 +282,7 @@ export async function getAdminWarehouses() {
     return emptyWarehouseData();
   }
 
-  const [cities, warehouses, inventory, priorities, variants] = await Promise.all([
+  const [cities, warehouses, inventory, priorities, variants, categories] = await Promise.all([
     supabase.from("cities").select("id, name_ar, name_en, is_active").order("name_ar"),
     supabase.from("warehouses").select("id, name, city_id, address, is_active, cities(name_ar)").order("name"),
     supabase
@@ -274,9 +295,12 @@ export async function getAdminWarehouses() {
     supabase.from("warehouse_priorities").select("id, city_id, warehouse_id, priority_order").order("priority_order"),
     supabase
       .from("product_variants")
-      .select("id, product_id, color, size, type, image_url, extra_price, products(name_ar)")
+      .select(
+        "id, product_id, color, size, type, image_url, extra_price, is_active, products(id, category_id, name_ar, name_en, images, cost_price, customer_price, marketer_price, marketer_commission, low_stock_threshold, is_active, categories(name_ar)), warehouse_inventory(warehouse_id, quantity_available, quantity_reserved, low_stock_threshold, warehouses(name))",
+      )
       .eq("is_active", true)
-      .limit(120),
+      .limit(240),
+    supabase.from("categories").select("id, name_ar, name_en, image_url, sort_order, is_active").order("sort_order"),
   ]);
 
   return {
@@ -289,7 +313,8 @@ export async function getAdminWarehouses() {
       warehouse_id: string;
       priority_order: number;
     }>,
-    variants: (variants.data || []) as AdminProductVariant[],
+    variants: normalizeWarehouseVariants(variants.data || []),
+    categories: (categories.data || []) as AdminCategory[],
   };
 }
 
@@ -536,6 +561,7 @@ function emptyWarehouseData() {
     cities: [] as AdminCity[],
     warehouses: [] as AdminWarehouse[],
     inventory: [] as AdminInventoryRow[],
+    categories: [] as AdminCategory[],
     priorities: [] as Array<{
       id: string;
       city_id: string;
@@ -553,6 +579,33 @@ function normalizeProducts(rows: unknown[]) {
     return {
       ...product,
       images: Array.isArray(product.images) ? product.images : [],
+    };
+  });
+}
+
+function normalizeWarehouseVariants(rows: unknown[]): AdminProductVariant[] {
+  return rows.map((row) => {
+    const variant = row as AdminProductVariant;
+    const product = variant.products;
+
+    return {
+      ...variant,
+      extra_price: Number(variant.extra_price || 0),
+      products: product
+        ? {
+            ...product,
+            images: Array.isArray(product.images) ? product.images : [],
+            cost_price: Number(product.cost_price || 0),
+            customer_price: Number(product.customer_price || 0),
+            marketer_price: Number(product.marketer_price || 0),
+            marketer_commission: Number(product.marketer_commission || 0),
+          }
+        : null,
+      warehouse_inventory: (variant.warehouse_inventory || []).map((inventory) => ({
+        ...inventory,
+        quantity_available: Number(inventory.quantity_available || 0),
+        quantity_reserved: Number(inventory.quantity_reserved || 0),
+      })),
     };
   });
 }

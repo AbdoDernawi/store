@@ -1,7 +1,7 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-21T15:16:41+02:00",
-  "current_phase": "7b",
+  "last_updated": "2026-05-21T16:13:21+02:00",
+  "current_phase": "7c",
   "phases": {
     "1": {
       "status": "verified",
@@ -57,6 +57,11 @@
       "status": "verified",
       "completed_at": "2026-05-21T15:16:41+02:00",
       "notes": "Practical admin refinements are complete. Added configurable expense types, payment methods with automatic treasuries, expense recording from a selected treasury, category management with add/show/hide controls, and delivery agent custody management with pending handover confirmation. Supabase migration admin_finance_delivery_categories was applied remotely as 20260521121359 and verified with rollback SQL for finance and category flows. Local lint/build passed."
+    },
+    "7c": {
+      "status": "verified",
+      "completed_at": "2026-05-21T16:13:21+02:00",
+      "notes": "Warehouse UX refinement is complete. Rebuilt admin warehouses as a store-like product picker with categories, search, color/size filters, product cards, operation cart, batch transfer, batch inventory adjustment, soft priority planner, and product edit drawer. Added safe variant edit/delete APIs that block deleting any color/size with stock, reserved quantity, or order usage. Supabase migration warehouse_shop_operations was applied remotely as 20260521151350 and rollback SQL verified batch adjust plus batch transfer payloads. Local lint/build passed."
     },
     "8": { "status": "pending", "completed_at": null, "notes": "" },
     "9": { "status": "pending", "completed_at": null, "notes": "" }
@@ -217,6 +222,13 @@
     ,"app/api/admin/finance/expense-types/route.ts"
     ,"app/api/admin/finance/payment-methods/route.ts"
     ,"supabase/migrations/20260521121359_admin_finance_delivery_categories.sql"
+    ,"app/(admin)/admin/warehouses/page.tsx"
+    ,"components/admin/WarehouseOperationShop.tsx"
+    ,"app/api/admin/warehouses/transfer-batch/route.ts"
+    ,"app/api/admin/warehouses/adjust-batch/route.ts"
+    ,"app/api/admin/product-variants/[id]/route.ts"
+    ,"supabase/migrations/20260521151350_warehouse_shop_operations.sql"
+    ,"docs/warehouse-ui-proposals.html"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",
