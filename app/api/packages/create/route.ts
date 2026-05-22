@@ -1,22 +1,12 @@
-import { createHash, randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 import { getApiContext, jsonError, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
+import { archiveInvoicesForOrders } from "@/lib/invoices/server";
+import { createPackageQrHash } from "@/lib/invoices/qr";
 
 type CreatePackageBody = {
   orderIds?: string[];
   order_ids?: string[];
 };
-
-function createQrHash(packageId: string, timestamp: string) {
-  const secret = process.env.QR_SECRET_KEY;
-
-  if (!secret) {
-    throw new Error("QR_SECRET_KEY is not configured.");
-  }
-
-  return createHash("sha256")
-    .update(`${packageId}:${secret}:${timestamp}`)
-    .digest("hex");
-}
 
 export async function POST(request: Request) {
   const auth = await getApiContext(["super_admin", "admin"]);
@@ -49,7 +39,7 @@ export async function POST(request: Request) {
     }
 
     const timestamp = new Date().toISOString();
-    const qrCodeHash = createQrHash(createdPackage.id, timestamp);
+    const qrCodeHash = createPackageQrHash(createdPackage.id, timestamp);
 
     const { data: packageWithQr, error: qrError } = await auth.context.supabase
       .from("order_packages")
@@ -85,6 +75,8 @@ export async function POST(request: Request) {
     if (historyError) {
       return mapDatabaseError(historyError);
     }
+
+    await archiveInvoicesForOrders(auth.context.supabase, orderIds);
 
     return jsonOk({ package: packageWithQr });
   } catch (error) {

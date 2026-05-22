@@ -8,6 +8,7 @@ import {
   Truck,
   UserRound,
 } from "lucide-react";
+import { InvoicePreview as PdfInvoicePreview } from "@/components/invoices/InvoicePreview";
 import { MarketerOrderActions } from "@/components/marketer/MarketerOrderActions";
 import {
   formatDate,
@@ -171,6 +172,10 @@ function InvoicePreview({ details }: { details: MarketerOrderDetails }) {
           <AmountLine label="خصم" value={`-${formatMoney(order.discount_amount)}`} />
         ) : null}
         <AmountLine strong label="الإجمالي" value={formatMoney(order.total)} />
+      </div>
+
+      <div className="mt-3">
+        <PdfInvoicePreview compact orderId={order.id} title={`فاتورة الطلب #${order.order_number || "-"}`} />
       </div>
     </section>
   );

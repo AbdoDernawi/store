@@ -167,6 +167,12 @@ export default async function AdminOrderDetailsPage({ params }: OrderDetailsPage
                   {order.package.qr_code_hash}
                 </p>
               </div>
+              <Link
+                className="inline-flex h-11 items-center justify-center rounded-full bg-emerald-600 px-5 text-sm font-black text-white transition hover:bg-emerald-700"
+                href={`/admin/packages/${order.package.id}/print`}
+              >
+                طباعة الفاتورة وQR
+              </Link>
             </div>
           ) : (
             <div className="rounded-lg bg-slate-50 p-4 text-sm font-bold text-slate-500">

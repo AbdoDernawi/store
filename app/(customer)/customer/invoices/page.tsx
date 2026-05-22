@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FileText, Search } from "lucide-react";
+import { InvoicePreview } from "@/components/invoices/InvoicePreview";
 import { formatDate, formatMoney, paymentMethodLabels } from "@/lib/admin/format";
 import { getCustomerInvoices } from "@/lib/customer/data";
 
@@ -75,6 +76,9 @@ export default async function CustomerInvoicesPage({
                   راجع جزئي
                 </p>
               ) : null}
+              <div className="mt-3">
+                <InvoicePreview compact invoiceId={invoice.id} title={`فاتورة #${invoice.invoice_number || "-"}`} />
+              </div>
             </article>
           ))
         ) : (

@@ -1,7 +1,7 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-22T09:51:10+02:00",
-  "current_phase": "7c",
+  "last_updated": "2026-05-22T10:54:36+02:00",
+  "current_phase": "8",
   "phases": {
     "1": {
       "status": "verified",
@@ -63,7 +63,11 @@
       "completed_at": "2026-05-22T09:51:10+02:00",
       "notes": "Warehouse UX refinement is complete and aligned with the approved light reference without the map. Admin warehouses now use a compact overview with warehouse list and recent movement feed, a stock filter table, a three-column multi-product transfer board with picker/cart/destination layout, and an options-focused product edit drawer with visible stock deletion locks. Batch transfer, batch inventory adjustment, the soft priority planner, and safe variant edit/delete APIs remain in place. Supabase migration warehouse_shop_operations was applied remotely as 20260521151350; Supabase verification confirmed warehouse movement joins are available for the overview feed. Local lint/build passed and Playwright desktop/mobile checks verified the warehouse page layout without horizontal overflow."
     },
-    "8": { "status": "pending", "completed_at": null, "notes": "" },
+    "8": {
+      "status": "verified",
+      "completed_at": "2026-05-22T10:54:36+02:00",
+      "notes": "Invoices + PDF + QR phase is complete. Added package QR generation, automatic invoice archiving on package creation, browser invoice preview with print/download/share plus A4/A5/80mm controls, a package print page with embedded QR, and jsPDF invoice rendering with embedded Noto Sans Arabic fonts for Arabic output. Virtual invoices load virtual_stores identity without mixing original-store values; original invoices use server-configured store identity values. Supabase verification confirmed invoice/package records plus a virtual invoice identity sample. Local lint/build passed, the build trace includes the Arabic font assets for /api/invoices/generate, direct PDF render verification produced A4/A5/thermal PDF bytes with QR and embedded font data, and Playwright loaded the protected admin invoice archive shell."
+    },
     "9": { "status": "pending", "completed_at": null, "notes": "" }
   },
   "completed_files": [
@@ -229,6 +233,14 @@
     ,"app/api/admin/product-variants/[id]/route.ts"
     ,"supabase/migrations/20260521151350_warehouse_shop_operations.sql"
     ,"docs/warehouse-ui-proposals.html"
+    ,"app/api/packages/generate-qr/route.ts"
+    ,"app/api/invoices/generate/route.ts"
+    ,"app/(admin)/admin/packages/[id]/print/page.tsx"
+    ,"components/invoices/InvoicePreview.tsx"
+    ,"components/invoices/PrintButton.tsx"
+    ,"lib/invoices/pdf.ts"
+    ,"lib/invoices/qr.ts"
+    ,"lib/invoices/server.ts"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",

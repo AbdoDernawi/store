@@ -1,4 +1,5 @@
 import { FileText, Printer } from "lucide-react";
+import { InvoicePreview } from "@/components/invoices/InvoicePreview";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getAdminInvoices } from "@/lib/admin/management";
 import { formatDate, formatMoney, paymentMethodLabels } from "@/lib/admin/format";
@@ -20,16 +21,17 @@ export default async function AdminInvoicesPage() {
       </section>
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-950/5">
-        <div className="hidden grid-cols-[0.75fr_1.1fr_0.9fr_0.8fr_0.8fr] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-4 text-xs font-black text-slate-500 lg:grid">
+        <div className="hidden grid-cols-[0.75fr_1.1fr_0.9fr_0.8fr_0.8fr_1.1fr] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-4 text-xs font-black text-slate-500 lg:grid">
           <span>الفاتورة</span>
           <span>الزبون</span>
           <span>الدفع</span>
           <span>الإجمالي</span>
           <span>الطباعة</span>
+          <span>PDF</span>
         </div>
         <div className="divide-y divide-slate-100">
           {invoices.map((invoice) => (
-            <div className="grid gap-3 px-5 py-4 lg:grid-cols-[0.75fr_1.1fr_0.9fr_0.8fr_0.8fr] lg:items-center" key={invoice.id}>
+            <div className="grid gap-3 px-5 py-4 lg:grid-cols-[0.75fr_1.1fr_0.9fr_0.8fr_0.8fr_1.1fr] lg:items-center" key={invoice.id}>
               <div>
                 <p className="text-sm font-black text-slate-950">#{invoice.invoice_number || "-"}</p>
                 <p className="mt-1 text-xs font-bold text-slate-500">{formatDate(invoice.created_at)}</p>
@@ -44,11 +46,16 @@ export default async function AdminInvoicesPage() {
                 <Printer size={13} />
                 {invoice.printed_at ? "مطبوعة" : "جاهزة"}
               </StatusBadge>
+              <InvoicePreview compact invoiceId={invoice.id} />
             </div>
           ))}
           {!invoices.length ? <div className="px-5 py-12 text-center text-sm font-bold text-slate-500">لا توجد فواتير بعد.</div> : null}
         </div>
       </section>
+
+      {invoices[0] ? (
+        <InvoicePreview invoiceId={invoices[0].id} title={`معاينة الفاتورة #${invoices[0].invoice_number || "-"}`} />
+      ) : null}
     </div>
   );
 }
