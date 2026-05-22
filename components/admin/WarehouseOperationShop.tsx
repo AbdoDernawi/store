@@ -6,15 +6,18 @@ import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Edit3,
+  Filter,
   Loader2,
+  Lock,
   PackagePlus,
   Save,
   Search,
   ShoppingCart,
   Trash2,
+  X,
 } from "lucide-react";
 import type { AdminCategory, AdminCity, AdminProductVariant, AdminWarehouse } from "@/lib/admin/management";
-import { formatMoney, formatNumber } from "@/lib/admin/format";
+import { formatNumber } from "@/lib/admin/format";
 
 type OperationType = "transfer" | "adjust_in" | "adjust_out";
 
@@ -44,6 +47,17 @@ type ActionState = {
   message: string;
 };
 
+type InventoryFilterRow = {
+  key: string;
+  product: ProductGroup;
+  variant: AdminProductVariant;
+  warehouseId: string;
+  warehouseName: string;
+  available: number;
+  reserved: number;
+  threshold: number;
+};
+
 const operationOptions: Array<{ value: OperationType; label: string; hint: string }> = [
   { value: "transfer", label: "تحويل بين المخازن", hint: "اختر من المصدر ثم حول السلة إلى مخزن آخر" },
   { value: "adjust_in", label: "إضافة كمية", hint: "استلام أو زيادة مخزون لعدة منتجات" },
@@ -71,8 +85,14 @@ export function WarehouseOperationShop({
   const [query, setQuery] = useState("");
   const [colorFilter, setColorFilter] = useState("all");
   const [sizeFilter, setSizeFilter] = useState("all");
+  const [inventoryCategoryId, setInventoryCategoryId] = useState("all");
+  const [inventoryColorFilter, setInventoryColorFilter] = useState("all");
+  const [inventoryLowOnly, setInventoryLowOnly] = useState(false);
+  const [inventoryQuery, setInventoryQuery] = useState("");
+  const [inventorySizeFilter, setInventorySizeFilter] = useState("all");
+  const [inventoryStatusFilter, setInventoryStatusFilter] = useState("all");
+  const [inventoryWarehouseId, setInventoryWarehouseId] = useState("all");
   const [selectedVariantByProduct, setSelectedVariantByProduct] = useState<Record<string, string>>({});
-  const [draftQuantityByVariant, setDraftQuantityByVariant] = useState<Record<string, number>>({});
   const [cart, setCart] = useState<CartItem[]>([]);
   const [note, setNote] = useState("");
   const [state, setState] = useState<ActionState>({
@@ -88,6 +108,7 @@ export function WarehouseOperationShop({
   const selectedWarehouseName = warehouseName(activeWarehouses, selectedWarehouseId);
   const targetWarehouseName = warehouseName(activeWarehouses, targetWarehouseId);
   const selectedProduct = editingProductId ? products.find((product) => product.id === editingProductId) || null : null;
+  const cartQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const filteredProducts = products.filter((product) => {
     const search = query.trim().toLowerCase();
@@ -102,6 +123,25 @@ export function WarehouseOperationShop({
 
     return matchesCategory && matchesSearch && matchesColor && matchesSize;
   });
+  const inventoryRows = useMemo(() => buildInventoryRows(products, inventoryWarehouseId), [products, inventoryWarehouseId]);
+  const filteredInventoryRows = inventoryRows.filter((row) => {
+    const search = inventoryQuery.trim().toLowerCase();
+    const status = inventoryStatus(row.available, row.threshold);
+    const variantLabel = variantShortLabel(row.variant).toLowerCase();
+    const matchesSearch =
+      !search ||
+      row.product.nameAr.toLowerCase().includes(search) ||
+      row.product.nameEn.toLowerCase().includes(search) ||
+      row.warehouseName.toLowerCase().includes(search) ||
+      variantLabel.includes(search);
+    const matchesCategory = inventoryCategoryId === "all" || row.product.categoryId === inventoryCategoryId;
+    const matchesColor = inventoryColorFilter === "all" || row.variant.color === inventoryColorFilter;
+    const matchesSize = inventorySizeFilter === "all" || row.variant.size === inventorySizeFilter;
+    const matchesStatus = inventoryStatusFilter === "all" || status === inventoryStatusFilter;
+    const matchesLow = !inventoryLowOnly || status === "low";
+
+    return matchesSearch && matchesCategory && matchesColor && matchesSize && matchesStatus && matchesLow;
+  });
 
   function selectedVariantFor(product: ProductGroup) {
     const preferredId = selectedVariantByProduct[product.id];
@@ -110,20 +150,10 @@ export function WarehouseOperationShop({
     return preferred || product.variants[0];
   }
 
-  function quantityFor(variantId: string) {
-    return Math.max(1, draftQuantityByVariant[variantId] || 1);
-  }
-
-  function setDraftQuantity(variant: AdminProductVariant, quantity: number) {
-    const max = stockForVariant(variant, selectedWarehouseId).available;
-    const next = operationType === "adjust_in" ? Math.max(1, quantity) : Math.min(Math.max(1, quantity), Math.max(1, max));
-    setDraftQuantityByVariant((current) => ({ ...current, [variant.id]: next }));
-  }
-
   function addToCart(product: ProductGroup) {
     const variant = selectedVariantFor(product);
     const stock = stockForVariant(variant, selectedWarehouseId);
-    const quantity = quantityFor(variant.id);
+    const quantity = 1;
 
     if (operationType !== "adjust_in" && stock.available <= 0) {
       setState({ tone: "error", message: "هذا الخيار غير متوفر في المخزن المصدر." });
@@ -222,14 +252,139 @@ export function WarehouseOperationShop({
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[1.7rem] border border-emerald-100 bg-white p-4 shadow-sm shadow-emerald-950/5">
-        <div className="grid gap-3 xl:grid-cols-[1.1fr_0.85fr_0.85fr]">
+      <section className="rounded-[1.2rem] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <PanelLabel index="2" title="فلترة المنتجات" />
+          <button
+            className="inline-flex h-9 w-fit items-center gap-2 rounded-[0.7rem] border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-600 transition hover:bg-white"
+            onClick={() => {
+              setInventoryCategoryId("all");
+              setInventoryColorFilter("all");
+              setInventoryLowOnly(false);
+              setInventoryQuery("");
+              setInventorySizeFilter("all");
+              setInventoryStatusFilter("all");
+              setInventoryWarehouseId("all");
+            }}
+            type="button"
+          >
+            <Filter size={14} />
+            إعادة تعيين
+          </button>
+        </div>
+
+        <div className="mt-4 rounded-[1rem] border border-slate-200 bg-white p-3 shadow-sm shadow-slate-950/[0.03]">
+          <div className="grid gap-2 lg:grid-cols-[minmax(230px,1.2fr)_repeat(4,minmax(120px,0.72fr))]">
+            <label className="flex h-11 items-center gap-2 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold text-slate-500 shadow-sm shadow-slate-950/[0.02]">
+              <Search size={16} />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-slate-800 outline-none placeholder:text-slate-400"
+                onChange={(event) => setInventoryQuery(event.target.value)}
+                placeholder="ابحث عن منتج أو لون أو مخزن"
+                value={inventoryQuery}
+              />
+            </label>
+            <select className="h-11 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none" onChange={(event) => setInventoryWarehouseId(event.target.value)} value={inventoryWarehouseId}>
+              <option value="all">كل المخازن</option>
+              {activeWarehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
+            </select>
+            <select className="h-11 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none" onChange={(event) => setInventoryCategoryId(event.target.value)} value={inventoryCategoryId}>
+              <option value="all">كل التصنيفات</option>
+              {categories.filter((category) => category.is_active).map((category) => <option key={category.id} value={category.id}>{category.name_ar}</option>)}
+            </select>
+            <select className="h-11 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none" onChange={(event) => setInventoryStatusFilter(event.target.value)} value={inventoryStatusFilter}>
+              <option value="all">كل الحالات</option>
+              <option value="ok">مستقر</option>
+              <option value="low">منخفض</option>
+              <option value="empty">غير متوفر</option>
+            </select>
+            <select className="h-11 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 outline-none" onChange={(event) => setInventorySizeFilter(event.target.value)} value={inventorySizeFilter}>
+              <option value="all">كل المقاسات</option>
+              {sizeOptions.map((size) => <option key={size} value={size}>{size}</option>)}
+            </select>
+          </div>
+
+          <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 lg:flex-row lg:items-center lg:justify-between">
+            <label className="inline-flex w-fit items-center gap-2 text-xs font-black text-slate-600">
+              <button
+                aria-pressed={inventoryLowOnly}
+                className={`relative h-6 w-11 rounded-full transition ${inventoryLowOnly ? "bg-emerald-600" : "bg-slate-300"}`}
+                onClick={() => setInventoryLowOnly((current) => !current)}
+                type="button"
+              >
+                <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${inventoryLowOnly ? "right-6" : "right-1"}`} />
+              </button>
+              منخفض المخزون
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-black text-slate-500">الألوان</span>
+              <ColorFilterDot active={inventoryColorFilter === "all"} label="كل" onClick={() => setInventoryColorFilter("all")} />
+              {colorOptions.slice(0, 7).map((color) => (
+                <ColorFilterDot active={inventoryColorFilter === color} color={color} key={color} label={color} onClick={() => setInventoryColorFilter(color)} />
+              ))}
+              <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-black text-slate-500 ring-1 ring-slate-100">
+                إجمالي {formatNumber(filteredInventoryRows.length)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 overflow-hidden rounded-[1rem] border border-slate-200">
+          <div className="hidden grid-cols-[minmax(250px,1.4fr)_0.7fr_0.45fr_0.5fr_0.5fr_0.55fr_42px] items-center gap-3 bg-slate-50 px-4 py-3 text-[11px] font-black text-slate-500 lg:grid">
+            <span>المنتج / المتغير</span>
+            <span>المخزن</span>
+            <span>المقاس</span>
+            <span>متوفر</span>
+            <span>محجوز</span>
+            <span>الحالة</span>
+            <span />
+          </div>
+          <div className="divide-y divide-slate-100 bg-white">
+            {filteredInventoryRows.slice(0, 40).map((row) => {
+              const status = inventoryStatus(row.available, row.threshold);
+
+              return (
+                <article className="grid gap-3 px-4 py-3 lg:grid-cols-[minmax(250px,1.4fr)_0.7fr_0.45fr_0.5fr_0.5fr_0.55fr_42px] lg:items-center" key={row.key}>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <ProductThumb imageUrl={row.variant.image_url || productImage(row.product)} size="table" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-slate-950">{row.product.nameAr}</p>
+                      <p className="mt-0.5 truncate text-[11px] font-bold text-slate-500">
+                        {[row.variant.color, row.variant.type, row.product.categoryName].filter(Boolean).join(" · ") || "خيار أساسي"}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs font-black text-slate-700">{row.warehouseName}</p>
+                  <p className="text-xs font-black text-slate-700">{row.variant.size || "-"}</p>
+                  <p className="text-xs font-black text-emerald-700">{formatNumber(row.available)}</p>
+                  <p className="text-xs font-black text-sky-700">{formatNumber(row.reserved)}</p>
+                  <InventoryStatusBadge status={status} />
+                  <button
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-[0.7rem] bg-slate-50 text-slate-600 ring-1 ring-slate-100 transition hover:bg-emerald-50 hover:text-emerald-700"
+                    onClick={() => setEditingProductId(row.product.id)}
+                    title="تعديل المنتج"
+                    type="button"
+                  >
+                    <Edit3 size={15} />
+                  </button>
+                </article>
+              );
+            })}
+            {!filteredInventoryRows.length ? <div className="p-5 text-sm font-bold text-slate-500">لا توجد منتجات مطابقة للفلاتر الحالية.</div> : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[1.2rem] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <PanelLabel index="3" title="سلة التحويل - تحويل متعدد" />
           <div className="grid gap-2 sm:grid-cols-3">
             {operationOptions.map((option) => (
               <button
-                className={`rounded-[1.25rem] border p-3 text-right transition ${
+                className={`rounded-[0.8rem] border px-3 py-2 text-right transition ${
                   operationType === option.value
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm shadow-emerald-950/5"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                     : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-white"
                 }`}
                 key={option.value}
@@ -239,201 +394,195 @@ export function WarehouseOperationShop({
                 }}
                 type="button"
               >
-                <span className="block text-sm font-black">{option.label}</span>
-                <span className="mt-1 block text-xs font-bold leading-5 text-slate-500">{option.hint}</span>
+                <span className="block text-xs font-black">{option.label}</span>
+                <span className="mt-0.5 block truncate text-[10px] font-bold text-slate-500">{option.hint}</span>
               </button>
             ))}
           </div>
-
-          <div className="rounded-[1.25rem] bg-slate-50 p-3">
-            <p className="mb-2 text-xs font-black text-slate-500">{operationType === "transfer" ? "المخزن المصدر" : "المخزن"}</p>
-            <WarehouseSelectField value={sourceWarehouseId} warehouses={activeWarehouses} onChange={setSourceWarehouseId} />
-          </div>
-
-          <div className={`rounded-[1.25rem] bg-slate-50 p-3 ${operationType === "transfer" ? "" : "opacity-50"}`}>
-            <p className="mb-2 text-xs font-black text-slate-500">المخزن الوجهة</p>
-            <WarehouseSelectField disabled={operationType !== "transfer"} value={targetWarehouseId} warehouses={activeWarehouses} onChange={setTargetWarehouseId} />
-          </div>
         </div>
-      </div>
 
-      <div className="grid gap-4 xl:grid-cols-[210px_minmax(0,1fr)_370px]">
-        <aside className="rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm shadow-slate-950/5 xl:sticky xl:top-24">
-          <p className="px-2 pb-2 text-xs font-black text-slate-500">الأقسام</p>
-          <div className="flex gap-2 overflow-x-auto xl:flex-col xl:overflow-visible">
-            <CategoryButton active={activeCategoryId === "all"} label="كل المنتجات" onClick={() => setActiveCategoryId("all")} />
-            {categories.filter((category) => category.is_active).map((category) => (
-              <CategoryButton active={activeCategoryId === category.id} key={category.id} label={category.name_ar} onClick={() => setActiveCategoryId(category.id)} />
-            ))}
-          </div>
-        </aside>
-
-        <div className="min-w-0 space-y-3">
-          <div className="grid gap-2 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm shadow-slate-950/5 md:grid-cols-[1fr_0.55fr_0.55fr]">
-            <label className="flex h-12 items-center gap-2 rounded-full bg-slate-50 px-4 text-sm font-bold text-slate-500 ring-1 ring-slate-100">
-              <Search size={17} />
+        <div className="mt-4 grid gap-3 xl:grid-cols-[300px_minmax(360px,1fr)_250px]">
+          <aside className="rounded-[1rem] border border-slate-200 bg-white p-3 xl:order-3">
+            <h3 className="text-sm font-black text-slate-950">اختر المنتجات</h3>
+            <label className="mt-3 flex h-10 items-center gap-2 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500">
+              <Search size={15} />
               <input
                 className="min-w-0 flex-1 bg-transparent text-slate-800 outline-none placeholder:text-slate-400"
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="ابحث باسم المنتج أو اللون أو المقاس"
+                placeholder="ابحث عن منتج أو SKU"
                 value={query}
               />
             </label>
-            <select className="h-12 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-700 outline-none" onChange={(event) => setColorFilter(event.target.value)} value={colorFilter}>
-              <option value="all">كل الألوان</option>
-              {colorOptions.map((color) => <option key={color} value={color}>{color}</option>)}
-            </select>
-            <select className="h-12 rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-black text-slate-700 outline-none" onChange={(event) => setSizeFilter(event.target.value)} value={sizeFilter}>
-              <option value="all">كل المقاسات</option>
-              {sizeOptions.map((size) => <option key={size} value={size}>{size}</option>)}
-            </select>
-          </div>
+            <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
+              <CategoryButton active={activeCategoryId === "all"} label="الكل" onClick={() => setActiveCategoryId("all")} />
+              {categories.filter((category) => category.is_active).map((category) => (
+                <CategoryButton active={activeCategoryId === category.id} key={category.id} label={category.name_ar} onClick={() => setActiveCategoryId(category.id)} />
+              ))}
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              <select className="h-9 rounded-[0.7rem] border border-slate-200 bg-slate-50 px-2 text-xs font-black text-slate-700 outline-none" onChange={(event) => setColorFilter(event.target.value)} value={colorFilter}>
+                <option value="all">كل الألوان</option>
+                {colorOptions.map((color) => <option key={color} value={color}>{color}</option>)}
+              </select>
+              <select className="h-9 rounded-[0.7rem] border border-slate-200 bg-slate-50 px-2 text-xs font-black text-slate-700 outline-none" onChange={(event) => setSizeFilter(event.target.value)} value={sizeFilter}>
+                <option value="all">كل المقاسات</option>
+                {sizeOptions.map((size) => <option key={size} value={size}>{size}</option>)}
+              </select>
+            </div>
 
-          <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-            {filteredProducts.map((product) => {
-              const selectedVariant = selectedVariantFor(product);
-              const stock = stockForVariant(selectedVariant, selectedWarehouseId);
-              const imageUrl = selectedVariant.image_url || product.images[0]?.medium || product.images[0]?.thumb || product.images[0]?.large || "";
-              const selectedQuantity = quantityFor(selectedVariant.id);
+            <div className="mt-3 max-h-[530px] space-y-2 overflow-y-auto pl-1">
+              {filteredProducts.map((product) => {
+                const selectedVariant = selectedVariantFor(product);
+                const stock = stockForVariant(selectedVariant, selectedWarehouseId);
+                const cartItem = cart.find((item) => item.variantId === selectedVariant.id);
 
-              return (
-                <article className="overflow-hidden rounded-[1.6rem] border border-slate-200 bg-white shadow-sm shadow-slate-950/5" key={product.id}>
-                  <div className="relative h-36 bg-emerald-50">
-                    {imageUrl ? <Image alt="" className="object-cover" fill sizes="(min-width: 1536px) 24vw, (min-width: 768px) 42vw, 90vw" src={imageUrl} /> : <div className="flex h-full items-center justify-center text-emerald-600"><PackagePlus size={42} /></div>}
-                    <button
-                      className="absolute left-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-slate-600 shadow-sm transition hover:text-emerald-700"
-                      onClick={() => setEditingProductId(product.id)}
-                      title="تعديل المنتج"
-                      type="button"
-                    >
-                      <Edit3 size={17} />
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 p-4">
-                    <div>
-                      <p className="text-base font-black text-slate-950">{product.nameAr}</p>
-                      <p className="mt-1 text-xs font-bold text-slate-500">{product.categoryName || "بدون قسم"} · {formatMoney(product.customerPrice)}</p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {product.variants.map((variant) => {
-                        const variantStock = stockForVariant(variant, selectedWarehouseId);
-                        const isSelected = selectedVariant.id === variant.id;
-
-                        return (
-                          <button
-                            className={`rounded-full px-3 py-1.5 text-xs font-black ring-1 transition ${
-                              isSelected
-                                ? "bg-emerald-600 text-white ring-emerald-600"
-                                : "bg-slate-50 text-slate-600 ring-slate-100 hover:bg-emerald-50 hover:text-emerald-700"
-                            }`}
-                            key={variant.id}
-                            onClick={() => setSelectedVariantByProduct((current) => ({ ...current, [product.id]: variant.id }))}
-                            type="button"
-                          >
-                            {variantShortLabel(variant)} · {formatNumber(variantStock.available)}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <MetricMini label="متوفر" tone="emerald" value={formatNumber(stock.available)} />
-                      <MetricMini label="محجوز" tone="amber" value={formatNumber(stock.reserved)} />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-2">
-                      <QuantityStepper
-                        disabled={operationType !== "adjust_in" && stock.available <= 0}
-                        onChange={(next) => setDraftQuantity(selectedVariant, next)}
-                        value={selectedQuantity}
-                      />
+                return (
+                  <article className="rounded-[0.95rem] border border-slate-200 bg-white p-2.5" key={product.id}>
+                    <div className="flex items-start gap-2">
                       <button
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400"
-                        disabled={operationType !== "adjust_in" && stock.available <= 0}
+                        aria-label={cartItem ? "موجود في السلة" : "إضافة للسلة"}
+                        className={`mt-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-[0.25rem] ring-1 ${
+                          cartItem ? "bg-emerald-600 text-white ring-emerald-600" : "bg-white text-transparent ring-slate-300"
+                        }`}
                         onClick={() => addToCart(product)}
                         type="button"
                       >
-                        <ShoppingCart size={16} />
-                        إضافة
+                        <CheckCircle2 size={11} />
                       </button>
+                      <ProductThumb imageUrl={selectedVariant.image_url || productImage(product)} size="picker" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-black text-slate-950">{product.nameAr}</p>
+                        <p className="mt-0.5 truncate text-[10px] font-bold text-slate-500">{variantShortLabel(selectedVariant)}</p>
+                        <p className="mt-1 text-[10px] font-black text-emerald-700">متوفر {formatNumber(stock.available)}</p>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-
-          {!filteredProducts.length ? (
-            <div className="rounded-[1.5rem] bg-white p-5 text-sm font-bold text-slate-500">لا توجد منتجات مطابقة للفلاتر الحالية.</div>
-          ) : null}
-        </div>
-
-        <aside className="rounded-[1.6rem] border border-emerald-100 bg-white p-4 shadow-sm shadow-emerald-950/5 xl:sticky xl:top-24">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-black text-emerald-700">سلة العملية</p>
-              <h3 className="mt-1 text-xl font-black text-slate-950">{formatNumber(cart.length)} منتج</h3>
-              <p className="mt-1 text-xs font-bold leading-5 text-slate-500">
-                {operationType === "transfer" ? `${selectedWarehouseName} ← ${targetWarehouseName || "اختر وجهة"}` : selectedWarehouseName}
-              </p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {product.variants.map((variant) => (
+                        <button
+                          className={`rounded-full px-2 py-1 text-[10px] font-black ring-1 ${
+                            variant.id === selectedVariant.id ? "bg-emerald-600 text-white ring-emerald-600" : "bg-slate-50 text-slate-600 ring-slate-100"
+                          }`}
+                          key={variant.id}
+                          onClick={() => setSelectedVariantByProduct((current) => ({ ...current, [product.id]: variant.id }))}
+                          type="button"
+                        >
+                          {variantShortLabel(variant)}
+                        </button>
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
+              {!filteredProducts.length ? <div className="rounded-[0.9rem] bg-slate-50 p-3 text-xs font-bold text-slate-500">لا توجد نتائج هنا.</div> : null}
             </div>
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-              <ShoppingCart size={22} />
-            </span>
-          </div>
+          </aside>
 
-          <div className="mt-4 max-h-[430px] space-y-2 overflow-y-auto pr-1">
-            {cart.map((item) => {
-              const variant = variants.find((entry) => entry.id === item.variantId);
-              if (!variant) {
-                return null;
-              }
+          <article className="rounded-[1rem] border border-slate-200 bg-slate-50/55 p-3 xl:order-2">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-black text-slate-950">سلة التحويل ({formatNumber(cart.length)})</h3>
+                <p className="mt-0.5 text-xs font-bold text-slate-500">
+                  {operationType === "transfer" ? `${selectedWarehouseName || "اختر المصدر"} ← ${targetWarehouseName || "اختر الوجهة"}` : selectedWarehouseName || "اختر المخزن"}
+                </p>
+              </div>
+              {cart.length ? (
+                <button className="rounded-full bg-rose-50 px-3 py-1.5 text-[11px] font-black text-rose-700 ring-1 ring-rose-100" onClick={() => setCart([])} type="button">
+                  تفريغ السلة
+                </button>
+              ) : null}
+            </div>
 
-              return (
-                <div className="rounded-2xl bg-slate-50 p-3" key={item.variantId}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-black text-slate-900">{variant.products?.name_ar || "منتج"}</p>
-                      <p className="mt-1 text-xs font-bold text-slate-500">{variantShortLabel(variant)}</p>
+            <div className="mt-3 max-h-[545px] space-y-2 overflow-y-auto pl-1">
+              {cart.map((item) => {
+                const variant = variants.find((entry) => entry.id === item.variantId);
+                const product = products.find((entry) => entry.id === variant?.product_id);
+
+                if (!variant || !product) {
+                  return null;
+                }
+
+                return (
+                  <div className="rounded-[0.95rem] border border-slate-200 bg-white p-3" key={item.variantId}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-500 ring-1 ring-slate-100" onClick={() => setCart((current) => current.filter((entry) => entry.variantId !== item.variantId))} type="button">
+                          <X size={13} />
+                        </button>
+                        <ProductThumb imageUrl={variant.image_url || productImage(product)} size="cart" />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-black text-slate-950">{product.nameAr}</p>
+                          <p className="mt-0.5 text-xs font-bold text-slate-500">{variantShortLabel(variant)}</p>
+                          <p className="mt-1 text-[11px] font-black text-emerald-700">
+                            {operationType === "transfer" ? `من: ${selectedWarehouseName || "المصدر"}` : `المخزن: ${selectedWarehouseName || "-"}`}
+                          </p>
+                        </div>
+                      </div>
+                      <QuantityStepper onChange={(next) => updateCartQuantity(item.variantId, next)} value={item.quantity} />
                     </div>
-                    <button className="rounded-full bg-white p-2 text-rose-600 ring-1 ring-rose-100" onClick={() => setCart((current) => current.filter((entry) => entry.variantId !== item.variantId))} type="button">
-                      <Trash2 size={14} />
-                    </button>
                   </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <QuantityStepper onChange={(next) => updateCartQuantity(item.variantId, next)} value={item.quantity} />
-                    <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-600 ring-1 ring-slate-100">
-                      {operationType === "adjust_out" ? "-" : "+"}{formatNumber(item.quantity)}
-                    </span>
-                  </div>
+                );
+              })}
+              {!cart.length ? (
+                <div className="flex min-h-40 flex-col items-center justify-center rounded-[0.95rem] border border-dashed border-slate-200 bg-white p-5 text-center">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-[0.95rem] bg-emerald-50 text-emerald-700">
+                    <ShoppingCart size={22} />
+                  </span>
+                  <p className="mt-3 text-sm font-black text-slate-900">السلة فارغة</p>
+                  <p className="mt-1 text-xs font-bold leading-6 text-slate-500">اختر مجموعة منتجات بكميات ومقاسات مختلفة كما في المتجر.</p>
                 </div>
-              );
-            })}
-            {!cart.length ? <div className="rounded-2xl bg-slate-50 p-4 text-sm font-bold leading-7 text-slate-500">السلة فارغة. اختر المنتجات من الشبكة كأنك تجهز طلب متجر.</div> : null}
-          </div>
+              ) : null}
+            </div>
 
-          <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
-            <input
-              className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-800 outline-none"
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="ملاحظة اختيارية"
-              value={note}
-            />
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[0.9rem] border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600">
+              <span>إجمالي العناصر: {formatNumber(cart.length)}</span>
+              <span>إجمالي الكمية: {formatNumber(cartQuantity)} قطعة</span>
+            </div>
+          </article>
+
+          <aside className="rounded-[1rem] border border-slate-200 bg-white p-3 xl:order-1">
+            <h3 className="text-sm font-black text-slate-950">{operationType === "transfer" ? "المخزن الوجهة" : "المخزن المتأثر"}</h3>
+            <div className="mt-3 space-y-2">
+              <div>
+                <p className="mb-1 text-[11px] font-black text-slate-500">{operationType === "transfer" ? "اختر المخزن المصدر" : "اختر المخزن"}</p>
+                <WarehouseSelectField value={sourceWarehouseId} warehouses={activeWarehouses} onChange={setSourceWarehouseId} />
+              </div>
+              <div className={operationType === "transfer" ? "" : "opacity-50"}>
+                <p className="mb-1 text-[11px] font-black text-slate-500">اختر المخزن الوجهة</p>
+                <WarehouseSelectField disabled={operationType !== "transfer"} value={targetWarehouseId} warehouses={activeWarehouses} onChange={setTargetWarehouseId} />
+              </div>
+              <textarea
+                className="min-h-24 w-full resize-none rounded-[0.8rem] border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none placeholder:text-slate-400"
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="ملاحظة اختيارية"
+                value={note}
+              />
+            </div>
+
+            <div className="mt-3 rounded-[0.95rem] border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-black text-slate-950">ملخص العملية</p>
+              <div className="mt-2 space-y-2 text-xs font-bold text-slate-600">
+                <SummaryLine label="من" value={selectedWarehouseName || "-"} />
+                <SummaryLine label="إلى" value={operationType === "transfer" ? targetWarehouseName || "-" : "نفس المخزن"} />
+                <SummaryLine label="إجمالي العناصر" value={formatNumber(cart.length)} />
+                <SummaryLine label="إجمالي الكمية" value={`${formatNumber(cartQuantity)} قطعة`} />
+              </div>
+            </div>
+
             <button
-              className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 text-sm font-black text-white shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400"
+              className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[0.8rem] bg-emerald-600 px-4 text-sm font-black text-white shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-700 disabled:bg-slate-100 disabled:text-slate-400"
               disabled={isPending}
               onClick={() => void submitCart()}
               type="button"
             >
-              {isPending ? <Loader2 className="animate-spin" size={17} /> : <CheckCircle2 size={17} />}
-              تنفيذ السلة
+              {isPending ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+              {operationType === "transfer" ? "تأكيد التحويل" : "تنفيذ السلة"}
             </button>
-            <FieldMessage state={state} />
-          </div>
-        </aside>
-      </div>
+            <div className="mt-2">
+              <FieldMessage state={state} />
+            </div>
+          </aside>
+        </div>
+      </section>
 
       {selectedProduct ? (
         <ProductEditDrawer
@@ -601,44 +750,110 @@ function ProductEditDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/35 p-3 backdrop-blur-sm lg:items-center">
-      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-[1.7rem] bg-white p-5 shadow-2xl shadow-slate-950/20">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-xs font-black text-emerald-700">تعديل المنتج</p>
-            <h3 className="mt-1 text-2xl font-black text-slate-950">{product.nameAr}</h3>
-            <p className="mt-1 text-sm font-bold text-slate-500">لا يمكن حذف خيار عليه مخزون أو كمية محجوزة.</p>
+      <div className="max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-[1.2rem] border border-slate-200 bg-[#fbfdfc] shadow-2xl shadow-slate-950/20">
+        <header className="flex flex-col gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-slate-500 ring-1 ring-slate-100" onClick={onClose} type="button">
+              <X size={15} />
+            </button>
+            <div>
+              <p className="text-xs font-black text-emerald-700">4</p>
+              <h3 className="text-lg font-black text-slate-950">تعديل المنتج</h3>
+            </div>
           </div>
-          <button className="h-10 rounded-full bg-slate-50 px-4 text-sm font-black text-slate-600 ring-1 ring-slate-100" onClick={onClose} type="button">
-            إغلاق
-          </button>
-        </div>
+          <div className="flex gap-1 overflow-x-auto text-xs font-black text-slate-500">
+            <span className="rounded-full px-3 py-2">العام</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-2 text-emerald-700 ring-1 ring-emerald-100">الخيارات</span>
+            <span className="rounded-full px-3 py-2">المخزون</span>
+            <span className="rounded-full px-3 py-2">السعر</span>
+            <span className="rounded-full px-3 py-2">SEO</span>
+          </div>
+        </header>
 
-        <form className="mt-5 grid gap-3 rounded-[1.4rem] bg-slate-50 p-4 md:grid-cols-3" onSubmit={submitProduct}>
-          <input className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.nameAr} name="name_ar" placeholder="اسم عربي" />
-          <input className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.nameEn} name="name_en" placeholder="اسم إنجليزي" />
-          <select className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.categoryId || ""} name="category_id">
-            <option value="">بدون قسم</option>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name_ar}</option>)}
-          </select>
-          <input className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.costPrice} name="cost_price" placeholder="التكلفة" step="0.01" type="number" />
-          <input className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.customerPrice} name="customer_price" placeholder="سعر الزبون" step="0.01" type="number" />
-          <input className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.marketerPrice} name="marketer_price" placeholder="سعر المسوق" step="0.01" type="number" />
-          <input className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.marketerCommission} name="marketer_commission" placeholder="عمولة المسوق" step="0.01" type="number" />
-          <input className="h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-bold outline-none" defaultValue={product.lowStockThreshold} name="low_stock_threshold" placeholder="حد التنبيه" type="number" />
-          <button className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 text-sm font-black text-white disabled:bg-slate-200" disabled={isSaving} type="submit">
-            {isSaving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
-            حفظ المنتج
-          </button>
-        </form>
+        <div className="grid max-h-[calc(94vh-72px)] overflow-y-auto lg:grid-cols-[minmax(0,1fr)_310px]">
+          <section className="p-4">
+            <div className="rounded-[1rem] border border-slate-200 bg-white p-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-black text-emerald-700">الألوان والمقاسات</p>
+                  <p className="mt-1 text-sm font-bold text-slate-500">لا يمكن حذف خيار عليه مخزون أو كمية محجوزة في أي مخزن.</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {uniqueValues(product.variants.map((variant) => variant.color)).map((color) => (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-black text-slate-600 ring-1 ring-slate-100" key={color}>
+                      <i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: swatchColor(color) }} />
+                      {color}
+                    </span>
+                  ))}
+                  {uniqueValues(product.variants.map((variant) => variant.size)).map((size) => (
+                    <span className="rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-black text-slate-600 ring-1 ring-slate-100" key={size}>
+                      {size}
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-2">
-          {product.variants.map((variant) => (
-            <VariantEditRow key={variant.id} onSaved={onSaved} variant={variant} />
-          ))}
-        </div>
+              <div className="mt-3 hidden grid-cols-[minmax(0,1fr)_110px_110px_120px] gap-2 rounded-[0.8rem] bg-slate-50 px-3 py-2 text-[11px] font-black text-slate-500 md:grid">
+                <span>الخيار</span>
+                <span>متوفر</span>
+                <span>محجوز</span>
+                <span>التحكم</span>
+              </div>
+              <div className="mt-2 space-y-2">
+                {product.variants.map((variant) => (
+                  <VariantEditRow key={variant.id} onSaved={onSaved} variant={variant} />
+                ))}
+              </div>
+            </div>
+          </section>
 
-        <div className="mt-4">
-          <FieldMessage state={state} />
+          <aside className="border-t border-slate-200 bg-white p-4 lg:border-r lg:border-t-0">
+            <div>
+              <p className="text-xs font-black text-slate-500">معلومات المنتج</p>
+              <div className="mt-3">
+                <ProductThumb imageUrl={productImage(product)} size="preview" />
+              </div>
+            </div>
+
+            <form className="mt-3 space-y-2" onSubmit={submitProduct}>
+              <FieldShell label="اسم المنتج">
+                <input className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.nameAr} name="name_ar" placeholder="اسم عربي" />
+              </FieldShell>
+              <FieldShell label="الاسم الإنجليزي">
+                <input className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.nameEn} name="name_en" placeholder="اسم إنجليزي" />
+              </FieldShell>
+              <FieldShell label="التصنيف">
+                <select className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.categoryId || ""} name="category_id">
+                  <option value="">بدون قسم</option>
+                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name_ar}</option>)}
+                </select>
+              </FieldShell>
+              <div className="grid grid-cols-2 gap-2">
+                <FieldShell label="التكلفة">
+                  <input className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.costPrice} name="cost_price" step="0.01" type="number" />
+                </FieldShell>
+                <FieldShell label="سعر الزبون">
+                  <input className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.customerPrice} name="customer_price" step="0.01" type="number" />
+                </FieldShell>
+                <FieldShell label="سعر المسوق">
+                  <input className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.marketerPrice} name="marketer_price" step="0.01" type="number" />
+                </FieldShell>
+                <FieldShell label="العمولة">
+                  <input className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.marketerCommission} name="marketer_commission" step="0.01" type="number" />
+                </FieldShell>
+              </div>
+              <FieldShell label="حد التنبيه">
+                <input className="h-10 w-full rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={product.lowStockThreshold} name="low_stock_threshold" type="number" />
+              </FieldShell>
+              <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[0.8rem] bg-emerald-600 px-4 text-sm font-black text-white disabled:bg-slate-200" disabled={isSaving} type="submit">
+                {isSaving ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                حفظ المنتج
+              </button>
+            </form>
+            <div className="mt-2">
+              <FieldMessage state={state} />
+            </div>
+          </aside>
         </div>
       </div>
     </div>
@@ -700,40 +915,55 @@ function VariantEditRow({ onSaved, variant }: { onSaved: () => void; variant: Ad
   }
 
   return (
-    <div className={`rounded-[1.35rem] border p-4 ${hasStock ? "border-amber-200 bg-amber-50/50" : "border-slate-200 bg-slate-50"}`}>
-      <form className="grid gap-2 sm:grid-cols-2" onSubmit={submit}>
-        <input className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={variant.color || ""} name="color" placeholder="اللون" />
-        <input className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={variant.size || ""} name="size" placeholder="المقاس" />
-        <input className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={variant.type || ""} name="type" placeholder="النوع" />
-        <input className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-bold outline-none" defaultValue={variant.extra_price || 0} name="extra_price" placeholder="فرق السعر" step="0.01" type="number" />
-        <button className="h-10 rounded-full bg-emerald-600 px-4 text-sm font-black text-white disabled:bg-slate-200" disabled={isSaving} type="submit">حفظ الخيار</button>
-        <button
-          className="h-10 rounded-full bg-slate-900 px-4 text-sm font-black text-white disabled:bg-slate-200"
-          disabled={isSaving}
-          onClick={() => void patchVariant({ is_active: !variant.is_active }, variant.is_active ? "تم تعطيل الخيار من البيع." : "تم تنشيط الخيار.")}
-          type="button"
-        >
-          {variant.is_active ? "تعطيل البيع" : "تنشيط"}
-        </button>
+    <div className={`rounded-[0.9rem] border p-2.5 ${hasStock ? "border-amber-200 bg-amber-50/45" : "border-slate-200 bg-white"}`}>
+      <form className="grid gap-2 md:grid-cols-[minmax(0,1fr)_110px_110px_120px] md:items-center" onSubmit={submit}>
+        <div className="grid gap-1.5 sm:grid-cols-4">
+          <input className="h-9 rounded-[0.65rem] border border-slate-200 bg-white px-2 text-xs font-bold outline-none" defaultValue={variant.color || ""} name="color" placeholder="اللون" />
+          <input className="h-9 rounded-[0.65rem] border border-slate-200 bg-white px-2 text-xs font-bold outline-none" defaultValue={variant.size || ""} name="size" placeholder="المقاس" />
+          <input className="h-9 rounded-[0.65rem] border border-slate-200 bg-white px-2 text-xs font-bold outline-none" defaultValue={variant.type || ""} name="type" placeholder="النوع" />
+          <input className="h-9 rounded-[0.65rem] border border-slate-200 bg-white px-2 text-xs font-bold outline-none" defaultValue={variant.extra_price || 0} name="extra_price" placeholder="فرق السعر" step="0.01" type="number" />
+        </div>
+        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-center text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">
+          {formatNumber(stock.available)} متوفر
+        </span>
+        <span className="rounded-full bg-sky-50 px-2.5 py-1 text-center text-[11px] font-black text-sky-700 ring-1 ring-sky-100">
+          {formatNumber(stock.reserved)} محجوز
+        </span>
+        <div className="flex flex-wrap justify-end gap-1.5">
+          <button className="h-8 rounded-full bg-emerald-600 px-3 text-[11px] font-black text-white disabled:bg-slate-200" disabled={isSaving} type="submit">
+            حفظ
+          </button>
+          <button
+            className="h-8 rounded-full bg-white px-3 text-[11px] font-black text-slate-700 ring-1 ring-slate-200 disabled:bg-slate-100"
+            disabled={isSaving}
+            onClick={() => void patchVariant({ is_active: !variant.is_active }, variant.is_active ? "تم تعطيل الخيار من البيع." : "تم تنشيط الخيار.")}
+            type="button"
+          >
+            {variant.is_active ? "تعطيل" : "تنشيط"}
+          </button>
+        </div>
       </form>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">متوفر {formatNumber(stock.available)}</span>
-          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-amber-700 ring-1 ring-amber-100">محجوز {formatNumber(stock.reserved)}</span>
-        </div>
+      <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        {hasStock ? (
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-black text-rose-700 ring-1 ring-rose-100">
+            <Lock size={11} />
+            لا يمكن حذف خيار عليه مخزون
+          </span>
+        ) : (
+          <span className="text-[11px] font-bold text-slate-500">الخيار خال من المخزون ويمكن حذفه.</span>
+        )}
         <button
-          className="inline-flex h-9 items-center gap-2 rounded-full bg-rose-50 px-3 text-xs font-black text-rose-700 ring-1 ring-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-8 w-fit items-center gap-1.5 rounded-full bg-rose-50 px-3 text-[11px] font-black text-rose-700 ring-1 ring-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isSaving || hasStock}
           onClick={() => void deleteVariant()}
           type="button"
         >
-          <Trash2 size={14} />
+          <Trash2 size={13} />
           حذف
         </button>
       </div>
 
-      {hasStock ? <p className="mt-2 text-xs font-bold leading-5 text-amber-700">لا يمكن حذف هذا اللون/المقاس لأن عليه مخزون أو كمية محجوزة.</p> : null}
       <div className="mt-2">
         <FieldMessage state={message} />
       </div>
@@ -741,10 +971,105 @@ function VariantEditRow({ onSaved, variant }: { onSaved: () => void; variant: Ad
   );
 }
 
+function PanelLabel({ index, title }: { index: string; title: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-700 text-sm font-black text-white">
+        {index}
+      </span>
+      <h2 className="text-lg font-black text-slate-950">{title}</h2>
+    </div>
+  );
+}
+
+function ColorFilterDot({
+  active,
+  color,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  color?: string;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={`flex h-7 min-w-7 items-center justify-center rounded-full p-1 ring-1 transition ${
+        active ? "ring-emerald-500 ring-offset-2" : "ring-slate-200 hover:ring-emerald-200"
+      }`}
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      {color ? (
+        <span className="h-full w-full rounded-full border border-white shadow-sm" style={{ backgroundColor: swatchColor(color) }} />
+      ) : (
+        <span className="px-1 text-[10px] font-black text-slate-600">كل</span>
+      )}
+    </button>
+  );
+}
+
+function InventoryStatusBadge({ status }: { status: "ok" | "low" | "empty" }) {
+  const labels = {
+    empty: "غير متوفر",
+    low: "منخفض",
+    ok: "مستقر",
+  };
+  const tone =
+    status === "empty"
+      ? "bg-rose-50 text-rose-700 ring-rose-100"
+      : status === "low"
+        ? "bg-amber-50 text-amber-700 ring-amber-100"
+        : "bg-emerald-50 text-emerald-700 ring-emerald-100";
+
+  return <span className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-black ring-1 ${tone}`}>{labels[status]}</span>;
+}
+
+function ProductThumb({
+  imageUrl,
+  size,
+}: {
+  imageUrl: string;
+  size: "cart" | "picker" | "preview" | "table";
+}) {
+  const dimensions = {
+    cart: "h-16 w-16 rounded-[0.85rem]",
+    picker: "h-14 w-14 rounded-[0.8rem]",
+    preview: "h-44 w-full rounded-[1rem] border border-slate-200",
+    table: "h-12 w-12 rounded-[0.8rem]",
+  };
+
+  return (
+    <span className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-slate-100 text-emerald-600 ${dimensions[size]}`}>
+      {imageUrl ? <Image alt="" className="object-cover" fill sizes="64px" src={imageUrl} /> : <PackagePlus size={size === "cart" ? 24 : 19} />}
+    </span>
+  );
+}
+
+function SummaryLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span>{label}</span>
+      <strong className="text-slate-950">{value}</strong>
+    </div>
+  );
+}
+
+function FieldShell({ children, label }: { children: React.ReactNode; label: string }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-[11px] font-black text-slate-500">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 function CategoryButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   return (
     <button
-      className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-black ring-1 transition ${
+      className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-black ring-1 transition ${
         active ? "bg-emerald-600 text-white ring-emerald-600" : "bg-slate-50 text-slate-600 ring-slate-100 hover:bg-emerald-50 hover:text-emerald-700"
       }`}
       onClick={onClick}
@@ -801,15 +1126,6 @@ function QuantityStepper({
   );
 }
 
-function MetricMini({ label, tone, value }: { label: string; tone: "emerald" | "amber"; value: string }) {
-  return (
-    <div className={`rounded-2xl px-3 py-2 ${tone === "emerald" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-      <span className="block text-xs font-black">{label}</span>
-      <strong className="mt-1 block text-base font-black">{value}</strong>
-    </div>
-  );
-}
-
 function FieldMessage({ state }: { state: ActionState }) {
   return (
     <div
@@ -857,6 +1173,81 @@ function groupProducts(variants: AdminProductVariant[]): ProductGroup[] {
   });
 
   return Array.from(map.values()).sort((a, b) => a.nameAr.localeCompare(b.nameAr, "ar"));
+}
+
+function buildInventoryRows(products: ProductGroup[], warehouseId: string): InventoryFilterRow[] {
+  return products.flatMap((product) =>
+    product.variants.flatMap((variant) => {
+      const inventory = (variant.warehouse_inventory || []).filter((row) => warehouseId === "all" || row.warehouse_id === warehouseId);
+
+      if (!inventory.length && warehouseId !== "all") {
+        return [];
+      }
+
+      if (!inventory.length) {
+        return [
+          {
+            available: 0,
+            key: `${product.id}-${variant.id}-unassigned`,
+            product,
+            reserved: 0,
+            threshold: product.lowStockThreshold,
+            variant,
+            warehouseId: "",
+            warehouseName: "غير موزع",
+          },
+        ];
+      }
+
+      return inventory.map((row) => ({
+        available: Number(row.quantity_available || 0),
+        key: `${product.id}-${variant.id}-${row.warehouse_id}`,
+        product,
+        reserved: Number(row.quantity_reserved || 0),
+        threshold: Number(row.low_stock_threshold || product.lowStockThreshold || 0),
+        variant,
+        warehouseId: row.warehouse_id,
+        warehouseName: row.warehouses?.name || "مخزن",
+      }));
+    }),
+  );
+}
+
+function inventoryStatus(available: number, threshold: number): "ok" | "low" | "empty" {
+  if (available <= 0) {
+    return "empty";
+  }
+
+  return available <= threshold ? "low" : "ok";
+}
+
+function productImage(product: ProductGroup) {
+  return product.images[0]?.medium || product.images[0]?.thumb || product.images[0]?.large || "";
+}
+
+function swatchColor(color: string) {
+  const normalized = color.trim().toLowerCase();
+  const presets: Record<string, string> = {
+    أسود: "#111827",
+    أبيض: "#f8fafc",
+    اخضر: "#16a34a",
+    أخضر: "#16a34a",
+    ازرق: "#2563eb",
+    أزرق: "#2563eb",
+    بني: "#9a6a43",
+    رمادي: "#94a3b8",
+    وردي: "#ec4899",
+    black: "#111827",
+    blue: "#2563eb",
+    brown: "#9a6a43",
+    gray: "#94a3b8",
+    green: "#16a34a",
+    grey: "#94a3b8",
+    pink: "#ec4899",
+    white: "#f8fafc",
+  };
+
+  return presets[normalized] || color;
 }
 
 function uniqueValues(values: Array<string | null>) {

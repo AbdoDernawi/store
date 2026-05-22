@@ -104,6 +104,22 @@ export type AdminInventoryRow = {
   } | null;
 };
 
+export type AdminWarehouseMovement = {
+  id: string;
+  warehouse_id: string;
+  type: string;
+  quantity: number;
+  note: string | null;
+  created_at: string;
+  warehouses?: { name?: string | null } | null;
+  product_variants?: {
+    color?: string | null;
+    size?: string | null;
+    type?: string | null;
+    products?: { name_ar?: string | null } | null;
+  } | null;
+};
+
 export type AdminSupplier = {
   id: string;
   name: string;
@@ -282,7 +298,7 @@ export async function getAdminWarehouses() {
     return emptyWarehouseData();
   }
 
-  const [cities, warehouses, inventory, priorities, variants, categories] = await Promise.all([
+  const [cities, warehouses, inventory, priorities, variants, categories, movements] = await Promise.all([
     supabase.from("cities").select("id, name_ar, name_en, is_active").order("name_ar"),
     supabase.from("warehouses").select("id, name, city_id, address, is_active, cities(name_ar)").order("name"),
     supabase
@@ -301,6 +317,11 @@ export async function getAdminWarehouses() {
       .eq("is_active", true)
       .limit(240),
     supabase.from("categories").select("id, name_ar, name_en, image_url, sort_order, is_active").order("sort_order"),
+    supabase
+      .from("warehouse_movements")
+      .select("id, warehouse_id, type, quantity, note, created_at, warehouses(name), product_variants(color, size, type, products(name_ar))")
+      .order("created_at", { ascending: false })
+      .limit(12),
   ]);
 
   return {
@@ -315,6 +336,10 @@ export async function getAdminWarehouses() {
     }>,
     variants: normalizeWarehouseVariants(variants.data || []),
     categories: (categories.data || []) as AdminCategory[],
+    movements: (movements.data || []).map((movement) => ({
+      ...(movement as AdminWarehouseMovement),
+      quantity: Number((movement as AdminWarehouseMovement).quantity || 0),
+    })),
   };
 }
 
@@ -569,6 +594,7 @@ function emptyWarehouseData() {
       priority_order: number;
     }>,
     variants: [] as AdminProductVariant[],
+    movements: [] as AdminWarehouseMovement[],
   };
 }
 

@@ -1,6 +1,6 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-21T16:13:21+02:00",
+  "last_updated": "2026-05-22T09:51:10+02:00",
   "current_phase": "7c",
   "phases": {
     "1": {
@@ -60,8 +60,8 @@
     },
     "7c": {
       "status": "verified",
-      "completed_at": "2026-05-21T16:13:21+02:00",
-      "notes": "Warehouse UX refinement is complete. Rebuilt admin warehouses as a store-like product picker with categories, search, color/size filters, product cards, operation cart, batch transfer, batch inventory adjustment, soft priority planner, and product edit drawer. Added safe variant edit/delete APIs that block deleting any color/size with stock, reserved quantity, or order usage. Supabase migration warehouse_shop_operations was applied remotely as 20260521151350 and rollback SQL verified batch adjust plus batch transfer payloads. Local lint/build passed."
+      "completed_at": "2026-05-22T09:51:10+02:00",
+      "notes": "Warehouse UX refinement is complete and aligned with the approved light reference without the map. Admin warehouses now use a compact overview with warehouse list and recent movement feed, a stock filter table, a three-column multi-product transfer board with picker/cart/destination layout, and an options-focused product edit drawer with visible stock deletion locks. Batch transfer, batch inventory adjustment, the soft priority planner, and safe variant edit/delete APIs remain in place. Supabase migration warehouse_shop_operations was applied remotely as 20260521151350; Supabase verification confirmed warehouse movement joins are available for the overview feed. Local lint/build passed and Playwright desktop/mobile checks verified the warehouse page layout without horizontal overflow."
     },
     "8": { "status": "pending", "completed_at": null, "notes": "" },
     "9": { "status": "pending", "completed_at": null, "notes": "" }
