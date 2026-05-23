@@ -19,6 +19,7 @@ export type CustomerCatalogProduct = {
   description_ar: string | null;
   images: Array<{ thumb?: string; medium?: string; large?: string }>;
   customer_price: number;
+  ordered_quantity: number;
   available_quantity: number;
   variants: CustomerCatalogVariant[];
 };
@@ -135,6 +136,7 @@ export async function getCustomerHomeData(user: AuthSession) {
       banners: [] as CustomerBanner[],
       categories: [] as CustomerCategory[],
       featuredProducts: [] as CustomerCatalogProduct[],
+      popularProducts: [] as CustomerCatalogProduct[],
       inDelivery: 0,
       ordersCount: 0,
     };
@@ -161,10 +163,15 @@ export async function getCustomerHomeData(user: AuthSession) {
       .eq("status", "out_for_delivery"),
   ]);
 
+  const products = normalizeCatalog(catalog.data || []);
+
   return {
     banners: (banners.data || []) as CustomerBanner[],
     categories: (categories.data || []) as CustomerCategory[],
-    featuredProducts: normalizeCatalog(catalog.data || []).slice(0, 6),
+    featuredProducts: products.slice(0, 6),
+    popularProducts: [...products]
+      .sort((left, right) => right.ordered_quantity - left.ordered_quantity)
+      .slice(0, 6),
     inDelivery: inDelivery.count || 0,
     ordersCount: ordersCount.count || 0,
   };
@@ -329,6 +336,7 @@ function normalizeCatalog(rows: unknown[]): CustomerCatalogProduct[] {
       available_quantity?: string | number | null;
       customer_price?: string | number | null;
       images?: unknown;
+      ordered_quantity?: string | number | null;
       variants?: unknown;
     };
 
@@ -337,6 +345,7 @@ function normalizeCatalog(rows: unknown[]): CustomerCatalogProduct[] {
       available_quantity: Number(product.available_quantity || 0),
       customer_price: Number(product.customer_price || 0),
       images: Array.isArray(product.images) ? product.images : [],
+      ordered_quantity: Number(product.ordered_quantity || 0),
       variants: normalizeVariants(product.variants),
     };
   });

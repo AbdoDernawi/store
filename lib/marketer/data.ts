@@ -18,6 +18,7 @@ export type MarketerCatalogProduct = {
   description_ar: string | null;
   images: Array<{ thumb?: string; medium?: string; large?: string }>;
   marketer_price: number;
+  ordered_quantity: number;
   variants: MarketerCatalogVariant[];
 };
 
@@ -388,6 +389,7 @@ function normalizeCatalog(rows: unknown[]): MarketerCatalogProduct[] {
     const product = row as Omit<MarketerCatalogProduct, "images" | "marketer_price" | "variants"> & {
       images?: unknown;
       marketer_price?: string | number | null;
+      ordered_quantity?: string | number | null;
       variants?: unknown;
     };
 
@@ -395,6 +397,7 @@ function normalizeCatalog(rows: unknown[]): MarketerCatalogProduct[] {
       ...product,
       images: Array.isArray(product.images) ? product.images : [],
       marketer_price: Number(product.marketer_price || 0),
+      ordered_quantity: Number(product.ordered_quantity || 0),
       variants: normalizeVariants(product.variants),
     };
   });
