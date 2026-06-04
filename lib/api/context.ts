@@ -108,6 +108,10 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("هذا المنتج غير متوفر حالياً.", 409, message);
   }
 
+  if (message.includes("INVALID_ORDER_ITEMS") || message.includes("INVALID_ORDER_ITEM")) {
+    return jsonError("راجع سلة المنتجات والكميات ثم حاول من جديد.", 400, message);
+  }
+
   if (message.includes("PACKAGE_ALREADY_ASSIGNED")) {
     return jsonError("هذا الطلب أُسند لمندوب آخر.", 409);
   }

@@ -27,7 +27,11 @@ type CreateOrderBody = {
 };
 
 function normalizeItems(items: CreateOrderBody["items"]) {
-  return (items || []).map((item) => ({
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((item) => ({
     product_variant_id: item.product_variant_id || item.productVariantId,
     quantity: Number(item.quantity || 0),
   }));
@@ -47,6 +51,23 @@ export async function POST(request: Request) {
   const customerAddress = body.customer_address || body.customerAddress;
   const cityId = body.city_id || body.cityId;
   const zoneId = body.zone_id || body.zoneId;
+  const items = normalizeItems(body.items);
+
+  if (!["cash", "bank_transfer"].includes(paymentMethod)) {
+    return jsonError("اختر طريقة دفع صحيحة.", 400);
+  }
+
+  if (!customerName?.trim() || !customerPhone?.trim() || !customerAddress?.trim()) {
+    return jsonError("أكمل بيانات الزبون أولاً.", 400);
+  }
+
+  if (!cityId || !zoneId) {
+    return jsonError("اختر المدينة والمنطقة.", 400);
+  }
+
+  if (!items.length || items.some((item) => !item.product_variant_id || item.quantity <= 0)) {
+    return jsonError("أضف منتجًا واحدًا على الأقل للسلة بكمية صحيحة.", 400);
+  }
 
   if (paymentMethod === "bank_transfer" && !(body.transfer_image_url || body.transferImageUrl)) {
     return jsonError("أرفق صورة التحويل حتى نكمل الطلب بسلاسة.", 400);
@@ -60,7 +81,7 @@ export async function POST(request: Request) {
     p_zone_id: zoneId,
     p_payment_method: paymentMethod,
     p_transfer_image_url: body.transfer_image_url || body.transferImageUrl || null,
-    p_items: normalizeItems(body.items),
+    p_items: items,
     p_virtual_store_id: body.virtual_store_id || body.virtualStoreId || null,
     p_discount_amount: Number(body.discount_amount ?? body.discountAmount ?? 0),
   });
