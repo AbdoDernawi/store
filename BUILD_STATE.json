@@ -1,6 +1,6 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-06-04T14:09:06+02:00",
+  "last_updated": "2026-06-04T14:35:50+02:00",
   "current_phase": "9",
   "phases": {
     "1": {
@@ -70,8 +70,8 @@
     },
     "9": {
       "status": "verified",
-      "completed_at": "2026-06-04T14:09:06+02:00",
-      "notes": "Final testing and production launch readiness verified. Supabase rollback E2E covered marketer cash cycle, partial return to selected warehouse, bank transfer treasury + delivery notice, cancellation after approval with inventory restoration, smart allocation split 2/4 by priority, and duplicate QR blocking with the Arabic UI message. Seed data exists for demo users, cities, zones, warehouses, treasuries, products, inventory, and orders. PWA manifest now has 192/512 and maskable icons, local Arabic fonts, service worker registration, and excludes the missing App Router app-build-manifest precache entry. Vercel production env names were confirmed and QR_SECRET_KEY was rotated to 64 characters. Local lint/build passed, product image processing outputs WebP, no Supabase Realtime/WebSocket usage was found, and Playwright production-shell verification passed with serviceWorker ready, icon/font assets loaded, no console errors, no failed requests, and no WebSocket connections. On 2026-06-04 the Supabase project was restored from inactive to ACTIVE_HEALTHY, demo user names were corrected, all six demo Auth passwords were reset to the shared demo password, and production login plus protected role pages were verified for super_admin, admin, marketer, delivery, and customer roles."
+      "completed_at": "2026-06-04T14:35:50+02:00",
+      "notes": "Final testing and production launch readiness verified. Supabase rollback E2E covered marketer cash cycle, partial return to selected warehouse, bank transfer treasury + delivery notice, cancellation after approval with inventory restoration, smart allocation split 2/4 by priority, and duplicate QR blocking with the Arabic UI message. Seed data exists for demo users, cities, zones, warehouses, treasuries, products, inventory, and orders. PWA manifest now has 192/512 and maskable icons, local Arabic fonts, service worker registration, and excludes the missing App Router app-build-manifest precache entry. Vercel production env names were confirmed and QR_SECRET_KEY was rotated to 64 characters. Local lint/build passed, product image processing outputs WebP, no Supabase Realtime/WebSocket usage was found, and Playwright production-shell verification passed with serviceWorker ready, icon/font assets loaded, no console errors, no failed requests, and no WebSocket connections. On 2026-06-04 the Supabase project was restored from inactive to ACTIVE_HEALTHY, demo user names were corrected, all six demo Auth passwords were reset to the shared demo password, and production login plus protected role pages were verified for super_admin, admin, marketer, delivery, and customer roles. Added /api/health for production dependency checks, applied Supabase function ACL hardening so anon can execute 0 public RPC functions, and removed broad public listing policies from product-images and store-logos buckets."
     }
   },
   "completed_files": [
@@ -254,6 +254,8 @@
     ,"public/fonts/noto-sans-arabic-700.ttf"
     ,"public/fonts/noto-sans-arabic-900.ttf"
     ,"scripts/generate-pwa-icons.mjs"
+    ,"app/api/health/route.ts"
+    ,"supabase/migrations/20260604122758_harden_function_acl.sql"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",
