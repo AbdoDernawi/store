@@ -78,7 +78,7 @@ async function checkSupabase() {
       return {
         status: "error" as CheckState,
         responseMs: Date.now() - startedAt,
-        message: error.message,
+        message: "Supabase database check failed.",
       };
     }
 
@@ -87,11 +87,11 @@ async function checkSupabase() {
       responseMs: Date.now() - startedAt,
       message: "Supabase database is reachable.",
     };
-  } catch (error) {
+  } catch {
     return {
       status: "error" as CheckState,
       responseMs: Date.now() - startedAt,
-      message: error instanceof Error ? error.message : "Supabase check failed.",
+      message: "Supabase check failed.",
     };
   } finally {
     clearTimeout(timeout);
