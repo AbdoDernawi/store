@@ -1,7 +1,7 @@
 {
   "project": "ecommerce-management-system",
-  "last_updated": "2026-05-22T10:54:36+02:00",
-  "current_phase": "8",
+  "last_updated": "2026-05-30T11:57:42+02:00",
+  "current_phase": "9",
   "phases": {
     "1": {
       "status": "verified",
@@ -68,7 +68,11 @@
       "completed_at": "2026-05-22T10:54:36+02:00",
       "notes": "Invoices + PDF + QR phase is complete. Added package QR generation, automatic invoice archiving on package creation, browser invoice preview with print/download/share plus A4/A5/80mm controls, a package print page with embedded QR, and jsPDF invoice rendering with embedded Noto Sans Arabic fonts for Arabic output. Virtual invoices load virtual_stores identity without mixing original-store values; original invoices use server-configured store identity values. Supabase verification confirmed invoice/package records plus a virtual invoice identity sample. Local lint/build passed, the build trace includes the Arabic font assets for /api/invoices/generate, direct PDF render verification produced A4/A5/thermal PDF bytes with QR and embedded font data, and Playwright loaded the protected admin invoice archive shell."
     },
-    "9": { "status": "pending", "completed_at": null, "notes": "" }
+    "9": {
+      "status": "verified",
+      "completed_at": "2026-05-30T11:57:42+02:00",
+      "notes": "Final testing and production launch readiness verified. Supabase rollback E2E covered marketer cash cycle, partial return to selected warehouse, bank transfer treasury + delivery notice, cancellation after approval with inventory restoration, smart allocation split 2/4 by priority, and duplicate QR blocking with the Arabic UI message. Seed data exists for demo users, cities, zones, warehouses, treasuries, products, inventory, and orders. PWA manifest now has 192/512 and maskable icons, local Arabic fonts, service worker registration, and excludes the missing App Router app-build-manifest precache entry. Vercel production env names were confirmed and QR_SECRET_KEY was rotated to 64 characters. Local lint/build passed, product image processing outputs WebP, no Supabase Realtime/WebSocket usage was found, and Playwright production-shell verification passed with serviceWorker ready, icon/font assets loaded, no console errors, no failed requests, and no WebSocket connections."
+    }
   },
   "completed_files": [
     "package.json",
@@ -241,6 +245,15 @@
     ,"lib/invoices/pdf.ts"
     ,"lib/invoices/qr.ts"
     ,"lib/invoices/server.ts"
+    ,"public/icons/icon-192.png"
+    ,"public/icons/icon-512.png"
+    ,"public/icons/maskable-192.png"
+    ,"public/icons/maskable-512.png"
+    ,"public/fonts/noto-sans-arabic-400.ttf"
+    ,"public/fonts/noto-sans-arabic-500.ttf"
+    ,"public/fonts/noto-sans-arabic-700.ttf"
+    ,"public/fonts/noto-sans-arabic-900.ttf"
+    ,"scripts/generate-pwa-icons.mjs"
   ],
   "known_issues": [
     "Exact file project_docs_v2.docx was not found; used latest matching file C:\\Users\\hp\\Downloads\\project_docs (1).docx.",

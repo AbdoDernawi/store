@@ -14,7 +14,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body>{children}</body>
+      <body>
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'if("serviceWorker"in navigator){var registerPwa=function(){navigator.serviceWorker.register("/sw.js").catch(function(){});};if(document.readyState==="complete"){registerPwa();}else{window.addEventListener("load",registerPwa,{once:true});}}',
+          }}
+        />
+      </body>
     </html>
   );
 }

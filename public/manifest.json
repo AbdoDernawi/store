@@ -1,12 +1,40 @@
 {
+  "id": "/",
   "name": "نظام إدارة المتجر الإلكتروني",
-  "short_name": "Ecommerce Ops",
-  "description": "إدارة الطلبات والمخازن والتوصيل والمالية",
+  "short_name": "Store Ops",
+  "description": "إدارة الطلبات والمخازن والتوصيل والمالية بواجهة عربية لطيفة.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f8faf8",
-  "theme_color": "#047857",
+  "background_color": "#fbfaf7",
+  "theme_color": "#8b6548",
   "dir": "rtl",
   "lang": "ar",
-  "icons": []
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }
