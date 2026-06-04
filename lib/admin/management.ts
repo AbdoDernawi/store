@@ -639,12 +639,20 @@ function normalizeWarehouseVariants(rows: unknown[]): AdminProductVariant[] {
 function normalizePaymentMethods(rows: unknown[]): AdminPaymentMethod[] {
   return rows.map((row) => {
     const method = row as AdminPaymentMethod & {
-      payment_method_treasuries?: Array<{ balance?: string | number | null; updated_at?: string | null }> | null;
+      payment_method_treasuries?:
+        | Array<{ balance?: string | number | null; updated_at?: string | null }>
+        | { balance?: string | number | null; updated_at?: string | null }
+        | null;
     };
+    const treasuries = Array.isArray(method.payment_method_treasuries)
+      ? method.payment_method_treasuries
+      : method.payment_method_treasuries
+        ? [method.payment_method_treasuries]
+        : [];
 
     return {
       ...method,
-      payment_method_treasuries: (method.payment_method_treasuries || []).map((treasury) => ({
+      payment_method_treasuries: treasuries.map((treasury) => ({
         ...treasury,
         balance: Number(treasury.balance || 0),
       })),
