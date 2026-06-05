@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     return jsonError("اختر نوع العهدة أولاً.", 400);
   }
 
-  if (!Array.isArray(orderIds) || orderIds.length === 0) {
+  if (body.type !== "cash_full" && (!Array.isArray(orderIds) || orderIds.length === 0)) {
     return jsonError("اختر طلبًا واحدًا على الأقل لإنشاء العهدة.", 400);
   }
 
