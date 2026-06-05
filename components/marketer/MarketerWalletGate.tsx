@@ -71,6 +71,7 @@ export function MarketerWalletGate({ data, phone }: Props) {
     });
     const result = (await response.json().catch(() => ({}))) as {
       error?: string;
+      migrationPending?: boolean;
       request?: WithdrawalRequest;
     };
 
@@ -83,8 +84,14 @@ export function MarketerWalletGate({ data, phone }: Props) {
     setAmount("");
     setAccountDetails("");
     setNote("");
-    setRequestMessage("تم إرسال طلب السحب للمراجعة.");
-    startTransition(() => router.refresh());
+    setRequestMessage(
+      result.migrationPending
+        ? "تم إرسال الطلب للأدمن. سجل الطلبات الكامل ينتظر تفعيل قاعدة البيانات."
+        : "تم إرسال طلب السحب للمراجعة.",
+    );
+    if (!result.migrationPending) {
+      startTransition(() => router.refresh());
+    }
   }
 
   if (!unlocked) {
