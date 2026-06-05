@@ -6,7 +6,7 @@ import {
   loadInvoiceDocument,
   markInvoicePrinted,
 } from "@/lib/invoices/server";
-import { normalizeInvoicePdfSize, renderInvoicePdf } from "@/lib/invoices/pdf";
+import { normalizeInvoicePdfSize, normalizeInvoicePdfTemplate, renderInvoicePdf } from "@/lib/invoices/pdf";
 
 export const runtime = "nodejs";
 
@@ -52,6 +52,7 @@ export async function GET(request: Request) {
       { ...document, invoice: printedInvoice },
       qrDataUrl,
       normalizeInvoicePdfSize(searchParams.get("size")),
+      normalizeInvoicePdfTemplate(searchParams.get("template") || document.identity.invoiceTemplate),
     );
     const fileNumber = printedInvoice.invoice_number || document.order.order_number || "draft";
 

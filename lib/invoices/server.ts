@@ -29,6 +29,7 @@ export type InvoiceIdentity = {
   note: string | null;
   primaryColor: string;
   secondaryColor: string;
+  invoiceTemplate: string;
 };
 
 export type InvoiceDocument = {
@@ -287,7 +288,7 @@ async function getInvoiceIdentity(supabase: InvoiceSupabase, order: InvoiceOrder
 
   const { data } = await supabase
     .from("virtual_stores")
-    .select("store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note")
+    .select("store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note, invoice_template")
     .eq("id", order.virtual_store_id)
     .maybeSingle();
 
@@ -299,6 +300,7 @@ async function getInvoiceIdentity(supabase: InvoiceSupabase, order: InvoiceOrder
     note: data?.invoice_note || null,
     primaryColor: data?.primary_color || "#059669",
     secondaryColor: data?.secondary_color || "#ecfdf5",
+    invoiceTemplate: data?.invoice_template || "modern",
   };
 }
 
@@ -311,6 +313,7 @@ function originalStoreIdentity(): InvoiceIdentity {
     note: process.env.STORE_INVOICE_NOTE || null,
     primaryColor: process.env.STORE_PRIMARY_COLOR || "#059669",
     secondaryColor: process.env.STORE_SECONDARY_COLOR || "#ecfdf5",
+    invoiceTemplate: process.env.STORE_INVOICE_TEMPLATE || "modern",
   };
 }
 

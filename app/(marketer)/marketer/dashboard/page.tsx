@@ -40,7 +40,7 @@ export default async function MarketerDashboardPage() {
           icon={Wallet}
           id="wallet"
           label="رصيد المحفظة"
-          value={formatMoney(data.walletBalance)}
+          value="محمية"
         />
         <MetricCard
           accent="bg-amber-50 text-amber-700 ring-amber-100"
@@ -135,7 +135,7 @@ export default async function MarketerDashboardPage() {
 
           <div className="space-y-3">
             <SoftLine label="أفضل خطوة الآن" value="راجع المنتجات المتاحة وأنشئ طلباً جديداً." />
-            <SoftLine label="حالة المحفظة" value={`الرصيد الحالي ${formatMoney(data.walletBalance)}`} />
+            <SoftLine label="حالة المحفظة" value="الرصيد مخفي ويظهر فقط بعد إدخال كلمة المرور." />
             <SoftLine label="طلبات نشطة" value={`${data.pendingOrders.toLocaleString("ar-LY")} طلب بانتظار اكتمال رحلته.`} />
           </div>
         </article>

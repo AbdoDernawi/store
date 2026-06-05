@@ -28,6 +28,7 @@ export function MarketerSettingsForm({
   const [previewUrl, setPreviewUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState(store?.primary_color || "#10b981");
   const [secondaryColor, setSecondaryColor] = useState(store?.secondary_color || "#f59e0b");
+  const [invoiceTemplate, setInvoiceTemplate] = useState(store?.invoice_template || "modern");
   const [state, setState] = useState<ActionState>({
     tone: "idle",
     message: "اضبط هوية متجرك الافتراضي لتظهر على الفواتير.",
@@ -106,6 +107,7 @@ export function MarketerSettingsForm({
         address: String(form.get("address") || ""),
         contact_phone: String(form.get("contact_phone") || ""),
         invoice_note: String(form.get("invoice_note") || ""),
+        invoice_template: invoiceTemplate,
         logo_url: logoUrl,
         primary_color: primaryColor,
         secondary_color: secondaryColor,
@@ -247,6 +249,10 @@ export function MarketerSettingsForm({
           />
         </div>
 
+        <div className="mt-3">
+          <InvoiceTemplateField onChange={setInvoiceTemplate} value={invoiceTemplate} />
+        </div>
+
         <Message state={state} />
 
         <button
@@ -282,6 +288,43 @@ function ColorField({
         value={value}
       />
     </label>
+  );
+}
+
+function InvoiceTemplateField({
+  onChange,
+  value,
+}: {
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  const templates = [
+    { label: "مودرن", value: "modern" },
+    { label: "كلاسيك", value: "classic" },
+    { label: "ناعم", value: "soft" },
+  ];
+
+  return (
+    <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-100">
+      <p className="mb-2 text-xs font-black text-slate-600">شكل الفاتورة</p>
+      <div className="flex flex-wrap gap-2">
+        {templates.map((template) => (
+          <button
+            aria-pressed={value === template.value}
+            className={`h-9 rounded-full px-4 text-xs font-black transition ${
+              value === template.value
+                ? "bg-emerald-600 text-white shadow-sm shadow-emerald-950/10"
+                : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-emerald-700"
+            }`}
+            key={template.value}
+            onClick={() => onChange(template.value)}
+            type="button"
+          >
+            {template.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

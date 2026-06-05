@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   Trash2,
   UserRound,
+  X,
 } from "lucide-react";
 import { formatMoney } from "@/lib/admin/format";
 
@@ -141,6 +143,9 @@ export function ShoppingExperience({
   const [search, setSearch] = useState("");
   const [selectedProductId, setSelectedProductId] = useState(firstProduct?.id || null);
   const [selectedVariantId, setSelectedVariantId] = useState(firstProduct?.variants[0]?.id || "");
+  const [cartOpen, setCartOpen] = useState(false);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const [productModalOpen, setProductModalOpen] = useState(false);
   const [state, setState] = useState<ActionState>({
     message:
       mode === "customer"
@@ -210,12 +215,18 @@ export function ShoppingExperience({
   const selectedZone = zones.find((zone) => zone.id === recipient.zoneId) || null;
   const deliveryFee = selectedZone?.deliveryFee || 0;
   const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const orderTotal = subtotal + deliveryFee;
+  const favoriteProducts = useMemo(
+    () => products.filter((product) => favoriteIds.includes(product.id)),
+    [favoriteIds, products],
+  );
   const heroProduct = latestProducts[0] || firstProduct;
 
   function openProduct(product: StorefrontProduct) {
     setSelectedProductId(product.id);
     setSelectedVariantId(product.variants[0]?.id || "");
     setQuantity(1);
+    setProductModalOpen(true);
   }
 
   function toggleFavorite(productId: string) {
@@ -304,6 +315,24 @@ export function ShoppingExperience({
       ];
     });
     setState({ message: "تمت إضافة المنتج للسلة.", tone: "success" });
+  }
+
+  function addSelectedToCartAndOpenCart() {
+    if (!selectedProduct || !selectedVariant) {
+      addSelectedToCart();
+      return;
+    }
+
+    const availableQuantity = getVariantLimit(selectedVariant);
+
+    if (availableQuantity !== null && availableQuantity <= 0) {
+      addSelectedToCart();
+      return;
+    }
+
+    addSelectedToCart();
+    setProductModalOpen(false);
+    setCartOpen(true);
   }
 
   function updateCartQuantity(variantId: string, nextQuantity: number) {
@@ -439,6 +468,8 @@ export function ShoppingExperience({
         favoriteCount={favoriteIds.length}
         heroProduct={heroProduct}
         mode={mode}
+        onOpenCart={() => setCartOpen(true)}
+        onOpenFavorites={() => setFavoritesOpen(true)}
         onOpenProduct={openProduct}
         search={search}
         setSearch={setSearch}
@@ -450,7 +481,7 @@ export function ShoppingExperience({
         onSelect={setActiveCategory}
       />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px] xl:items-start">
+      <div className="grid gap-5">
         <section className="min-w-0 space-y-5">
           <ProductShelf
             emptyMessage="لا توجد منتجات مطابقة الآن."
@@ -469,23 +500,6 @@ export function ShoppingExperience({
             title="الأكثر طلبًا"
           />
         </section>
-
-        <div className="xl:sticky xl:top-5">
-          {selectedProduct ? (
-            <ProductDetail
-              favorite={favoriteIds.includes(selectedProduct.id)}
-              onAdd={addSelectedToCart}
-              onFavorite={() => toggleFavorite(selectedProduct.id)}
-              onSelectVariant={setSelectedVariantId}
-              product={selectedProduct}
-              quantity={quantity}
-              selectedVariant={selectedVariant}
-              setQuantity={setQuantity}
-            />
-          ) : (
-            <EmptyProduct />
-          )}
-        </div>
       </div>
 
       <form
@@ -529,6 +543,61 @@ export function ShoppingExperience({
           </button>
         </div>
       </form>
+
+      <FloatingCartButton
+        count={cart.length}
+        onClick={() => setCartOpen(true)}
+        total={orderTotal}
+      />
+
+      <StorefrontModal
+        onClose={() => setProductModalOpen(false)}
+        open={productModalOpen && Boolean(selectedProduct)}
+      >
+        {selectedProduct ? (
+          <ProductDetail
+            favorite={favoriteIds.includes(selectedProduct.id)}
+            onAdd={addSelectedToCartAndOpenCart}
+            onFavorite={() => toggleFavorite(selectedProduct.id)}
+            onSelectVariant={setSelectedVariantId}
+            product={selectedProduct}
+            quantity={quantity}
+            selectedVariant={selectedVariant}
+            setQuantity={setQuantity}
+          />
+        ) : null}
+      </StorefrontModal>
+
+      <StorefrontModal
+        maxWidth="max-w-[760px]"
+        onClose={() => setCartOpen(false)}
+        open={cartOpen}
+        title="السلة"
+      >
+        <CartPanel
+          cart={cart}
+          deliveryFee={deliveryFee}
+          subtotal={subtotal}
+          updateCartQuantity={updateCartQuantity}
+        />
+      </StorefrontModal>
+
+      <StorefrontModal
+        maxWidth="max-w-[760px]"
+        onClose={() => setFavoritesOpen(false)}
+        open={favoritesOpen}
+        title="المفضلة"
+      >
+        <FavoritesPanel
+          favoriteIds={favoriteIds}
+          onFavorite={toggleFavorite}
+          onOpen={(product) => {
+            setFavoritesOpen(false);
+            openProduct(product);
+          }}
+          products={favoriteProducts}
+        />
+      </StorefrontModal>
     </div>
   );
 }
@@ -538,6 +607,8 @@ function StorefrontHero({
   favoriteCount,
   heroProduct,
   mode,
+  onOpenCart,
+  onOpenFavorites,
   onOpenProduct,
   search,
   setSearch,
@@ -546,6 +617,8 @@ function StorefrontHero({
   favoriteCount: number;
   heroProduct: StorefrontProduct | null;
   mode: "customer" | "marketer";
+  onOpenCart: () => void;
+  onOpenFavorites: () => void;
   onOpenProduct: (product: StorefrontProduct) => void;
   search: string;
   setSearch: (value: string) => void;
@@ -579,6 +652,23 @@ function StorefrontHero({
             <SlidersHorizontal size={18} />
           </span>
         </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:hidden">
+        <button
+          className="h-11 rounded-full bg-[#f8f4ed] text-xs font-black text-[#8b6548] ring-1 ring-[#eadccf]"
+          onClick={onOpenFavorites}
+          type="button"
+        >
+          المفضلة ({favoriteCount.toLocaleString("ar-LY")})
+        </button>
+        <button
+          className="h-11 rounded-full bg-[#8b6548] text-xs font-black text-white"
+          onClick={onOpenCart}
+          type="button"
+        >
+          السلة ({cartItems.toLocaleString("ar-LY")})
+        </button>
       </div>
 
       <div className="relative mt-3 min-h-[215px] overflow-hidden rounded-[1.7rem] bg-[#f3eadf] ring-1 ring-[#eadccf]">
@@ -638,6 +728,112 @@ function StatusButton({
         </strong>
       ) : null}
     </span>
+  );
+}
+
+function FloatingCartButton({
+  count,
+  onClick,
+  total,
+}: {
+  count: number;
+  onClick: () => void;
+  total: number;
+}) {
+  return (
+    <button
+      aria-label="فتح السلة"
+      className="fixed bottom-24 left-4 z-40 flex min-h-[3.5rem] items-center gap-3 rounded-full bg-[#8b6548] px-4 text-white shadow-[0_18px_45px_rgba(78,55,37,0.28)] transition hover:-translate-y-0.5 hover:bg-[#745238]"
+      onClick={onClick}
+      type="button"
+    >
+      <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/15">
+        <ShoppingBag size={20} />
+        {count ? (
+          <strong className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#24252f] px-1 text-[10px] font-black">
+            {count.toLocaleString("ar-LY")}
+          </strong>
+        ) : null}
+      </span>
+      <span className="text-right">
+        <span className="block text-[11px] font-black text-white/75">السلة</span>
+        <span className="block text-sm font-black">{formatMoney(total)}</span>
+      </span>
+    </button>
+  );
+}
+
+function StorefrontModal({
+  children,
+  maxWidth = "max-w-[430px]",
+  onClose,
+  open,
+  title,
+}: {
+  children: ReactNode;
+  maxWidth?: string;
+  onClose: () => void;
+  open: boolean;
+  title?: string;
+}) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#241b14]/35 p-2 backdrop-blur-sm sm:items-center sm:p-5">
+      <div
+        className={`max-h-[92vh] w-full ${maxWidth} overflow-y-auto rounded-[2rem] bg-white p-2 shadow-[0_24px_80px_rgba(36,27,20,0.22)]`}
+        dir="rtl"
+      >
+        <div className="mb-2 flex items-center justify-between gap-3 px-2 pt-1">
+          {title ? <h3 className="text-base font-black text-[#29252b]">{title}</h3> : <span />}
+          <button
+            aria-label="إغلاق"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f8f4ed] text-[#65584d] ring-1 ring-[#eadccf]"
+            onClick={onClose}
+            type="button"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function FavoritesPanel({
+  favoriteIds,
+  onFavorite,
+  onOpen,
+  products,
+}: {
+  favoriteIds: string[];
+  onFavorite: (id: string) => void;
+  onOpen: (product: StorefrontProduct) => void;
+  products: StorefrontProduct[];
+}) {
+  if (!products.length) {
+    return (
+      <div className="rounded-[1.5rem] bg-[#faf7f2] p-6 text-sm font-bold leading-6 text-[#7b7067] ring-1 ring-[#efe4d8]">
+        لم تضف منتجات إلى المفضلة بعد. اضغط على القلب فوق أي منتج وسيظهر هنا بسرعة.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {products.map((product) => (
+        <ProductCard
+          favorite={favoriteIds.includes(product.id)}
+          key={`favorite-${product.id}`}
+          onFavorite={() => onFavorite(product.id)}
+          onOpen={() => onOpen(product)}
+          product={product}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -1278,7 +1474,8 @@ function PaymentPanel({
   );
 }
 
-function EmptyProduct() {
+function EmptyProductUnused() {
+  void EmptyProductUnused;
   return (
     <section className="flex min-h-[360px] flex-col items-center justify-center rounded-[2rem] border border-[#eee5db] bg-white p-6 text-center shadow-sm shadow-[#4b3c2e]/5">
       <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#f5e9db] text-[#8b6548]">
@@ -1291,6 +1488,8 @@ function EmptyProduct() {
     </section>
   );
 }
+
+void EmptyProductUnused;
 
 function ProductAvailability({
   product,

@@ -61,7 +61,6 @@ export type MarketerOrderSummary = {
 };
 
 export type MarketerDashboardData = {
-  walletBalance: number;
   pendingOrders: number;
   deliveredOrders: number;
   unreadNotifications: number;
@@ -127,6 +126,16 @@ export type MarketerWalletData = {
     source_id: string | null;
     source_type: string;
   }>;
+  withdrawalRequests: Array<{
+    id: string;
+    amount: number;
+    method: string;
+    account_details: string | null;
+    note: string | null;
+    status: string;
+    created_at: string;
+    reviewed_at: string | null;
+  }>;
 };
 
 export type MarketerVirtualStore = {
@@ -138,6 +147,7 @@ export type MarketerVirtualStore = {
   contact_phone: string | null;
   address: string | null;
   invoice_note: string | null;
+  invoice_template: string | null;
 };
 
 export type MarketerNotification = {
@@ -166,8 +176,7 @@ export async function getMarketerDashboardData(user: AuthSession): Promise<Marke
     return emptyDashboard();
   }
 
-  const [wallet, pending, delivered, notifications, lastOrders] = await Promise.all([
-    supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle(),
+  const [pending, delivered, notifications, lastOrders] = await Promise.all([
     supabase
       .from("orders")
       .select("id", { count: "exact", head: true })
@@ -192,7 +201,6 @@ export async function getMarketerDashboardData(user: AuthSession): Promise<Marke
   ]);
 
   return {
-    walletBalance: Number(wallet.data?.balance || 0),
     pendingOrders: pending.count || 0,
     deliveredOrders: delivered.count || 0,
     unreadNotifications: notifications.count || 0,
@@ -322,7 +330,7 @@ export async function getMarketerWalletData(user: AuthSession): Promise<Marketer
   const supabase = createUserRouteClient();
 
   if (!supabase) {
-    return { balance: 0, transactions: [] };
+    return { balance: 0, transactions: [], withdrawalRequests: [] };
   }
 
   const { data: wallet } = await supabase
@@ -332,21 +340,33 @@ export async function getMarketerWalletData(user: AuthSession): Promise<Marketer
     .maybeSingle();
 
   if (!wallet) {
-    return { balance: 0, transactions: [] };
+    return { balance: 0, transactions: [], withdrawalRequests: [] };
   }
 
-  const { data: transactions } = await supabase
-    .from("wallet_transactions")
-    .select("id, flow, amount, source_type, source_id, note, created_at")
-    .eq("wallet_id", wallet.id)
-    .order("created_at", { ascending: false })
-    .limit(80);
+  const [transactions, withdrawalRequests] = await Promise.all([
+    supabase
+      .from("wallet_transactions")
+      .select("id, flow, amount, source_type, source_id, note, created_at")
+      .eq("wallet_id", wallet.id)
+      .order("created_at", { ascending: false })
+      .limit(80),
+    supabase
+      .from("wallet_withdrawal_requests")
+      .select("id, amount, method, account_details, note, status, created_at, reviewed_at")
+      .eq("wallet_id", wallet.id)
+      .order("created_at", { ascending: false })
+      .limit(40),
+  ]);
 
   return {
     balance: Number(wallet.balance || 0),
-    transactions: (transactions || []).map((transaction) => ({
+    transactions: (transactions.data || []).map((transaction) => ({
       ...transaction,
       amount: Number(transaction.amount || 0),
+    })),
+    withdrawalRequests: (withdrawalRequests.data || []).map((request) => ({
+      ...request,
+      amount: Number(request.amount || 0),
     })),
   };
 }
@@ -360,7 +380,7 @@ export async function getMarketerVirtualStore(user: AuthSession): Promise<Market
 
   const { data } = await supabase
     .from("virtual_stores")
-    .select("id, store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note")
+    .select("id, store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note, invoice_template")
     .eq("marketer_id", user.id)
     .maybeSingle();
 
@@ -496,7 +516,6 @@ function emptyDashboard(): MarketerDashboardData {
     lastOrders: [],
     pendingOrders: 0,
     unreadNotifications: 0,
-    walletBalance: 0,
   };
 }
 
