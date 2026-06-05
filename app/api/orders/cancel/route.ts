@@ -1,4 +1,4 @@
-import { getApiContext, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
+import { getApiContext, jsonError, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
 
 type CancelBody = {
   orderId?: string;
@@ -16,8 +16,14 @@ export async function POST(request: Request) {
   }
 
   const body = await readJsonBody<CancelBody>(request);
+  const orderId = body.order_id || body.orderId;
+
+  if (!orderId) {
+    return jsonError("اختر الطلب أولاً.", 400);
+  }
+
   const { data, error } = await auth.context.supabase.rpc("cancel_order", {
-    p_order_id: body.order_id || body.orderId,
+    p_order_id: orderId,
     p_reason: body.cancellation_reason || body.cancellationReason || body.reason || null,
   });
 

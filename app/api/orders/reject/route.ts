@@ -16,14 +16,19 @@ export async function POST(request: Request) {
   }
 
   const body = await readJsonBody<RejectBody>(request);
+  const orderId = body.order_id || body.orderId;
   const reason = body.rejection_reason || body.rejectionReason || body.reason || "";
+
+  if (!orderId) {
+    return jsonError("اختر الطلب أولاً.", 400);
+  }
 
   if (reason.trim().length < 2) {
     return jsonError("اكتب سببًا قصيرًا وواضحًا للرفض.", 400);
   }
 
   const { data, error } = await auth.context.supabase.rpc("reject_order", {
-    p_order_id: body.order_id || body.orderId,
+    p_order_id: orderId,
     p_reason: reason,
   });
 

@@ -1,4 +1,4 @@
-import { getApiContext, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
+import { getApiContext, jsonError, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
 
 type ConfirmTransferBody = {
   orderId?: string;
@@ -13,8 +13,14 @@ export async function POST(request: Request) {
   }
 
   const body = await readJsonBody<ConfirmTransferBody>(request);
+  const orderId = body.order_id || body.orderId;
+
+  if (!orderId) {
+    return jsonError("اختر الطلب أولاً.", 400);
+  }
+
   const { data, error } = await auth.context.supabase.rpc("confirm_bank_transfer_order", {
-    p_order_id: body.order_id || body.orderId,
+    p_order_id: orderId,
   });
 
   if (error) {

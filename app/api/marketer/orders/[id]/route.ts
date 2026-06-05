@@ -1,4 +1,4 @@
-import { getApiContext, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
+import { getApiContext, jsonError, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
 
 type OrderPatchBody = {
   city_id?: string;
@@ -19,6 +19,11 @@ export async function PATCH(
   }
 
   const body = await readJsonBody<OrderPatchBody>(request);
+
+  if (!body.customer_name || !body.customer_phone || !body.customer_address || !body.city_id || !body.zone_id) {
+    return jsonError("أكمل بيانات الطلب أولاً.", 400);
+  }
+
   const { data, error } = await auth.context.supabase.rpc("update_pending_marketer_order", {
     p_city_id: body.city_id,
     p_customer_address: body.customer_address,

@@ -1,4 +1,4 @@
-import { getApiContext, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
+import { getApiContext, jsonError, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
 
 type ReturnStockBody = {
   items?: Array<{
@@ -14,7 +14,11 @@ type ReturnStockBody = {
 };
 
 function normalizeItems(items: ReturnStockBody["items"]) {
-  return (items || []).map((item) => ({
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((item) => ({
     product_variant_id: item.product_variant_id || item.productVariantId,
     target_warehouse_id: item.target_warehouse_id || item.targetWarehouseId,
     quantity: Number(item.quantity || 0),
@@ -29,8 +33,14 @@ export async function POST(request: Request) {
   }
 
   const body = await readJsonBody<ReturnStockBody>(request);
+  const items = normalizeItems(body.items);
+
+  if (!items.length || items.some((item) => !item.product_variant_id || !item.target_warehouse_id || item.quantity <= 0)) {
+    return jsonError("أضف منتجًا مرتجعًا واحدًا على الأقل بكمية ومخزن صحيحين.", 400);
+  }
+
   const { data, error } = await auth.context.supabase.rpc("return_stock", {
-    p_items: normalizeItems(body.items),
+    p_items: items,
     p_reference_id: body.reference_id || body.referenceId || null,
     p_note: body.note || null,
   });

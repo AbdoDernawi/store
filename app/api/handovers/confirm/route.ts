@@ -1,4 +1,4 @@
-import { getApiContext, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
+import { getApiContext, jsonError, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
 
 type ConfirmHandoverBody = {
   handoverId?: string;
@@ -13,8 +13,14 @@ export async function POST(request: Request) {
   }
 
   const body = await readJsonBody<ConfirmHandoverBody>(request);
+  const handoverId = body.handover_id || body.handoverId;
+
+  if (!handoverId) {
+    return jsonError("اختر العهدة أولاً.", 400);
+  }
+
   const { data, error } = await auth.context.supabase.rpc("confirm_cash_handover", {
-    p_handover_id: body.handover_id || body.handoverId,
+    p_handover_id: handoverId,
   });
 
   if (error) {

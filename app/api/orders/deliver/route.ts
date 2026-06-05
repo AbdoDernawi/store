@@ -33,13 +33,18 @@ export async function POST(request: Request) {
   }
 
   const body = await readJsonBody<DeliverBody>(request);
+  const orderId = body.order_id || body.orderId;
+
+  if (!orderId) {
+    return jsonError("اختر الطلب أولاً.", 400);
+  }
 
   if (!body.type) {
     return jsonError("اختر نتيجة التسليم أولًا.", 400);
   }
 
   const { data, error } = await auth.context.supabase.rpc("deliver_order", {
-    p_order_id: body.order_id || body.orderId,
+    p_order_id: orderId,
     p_delivery_type: body.type,
     p_reason: body.reason || null,
     p_items: normalizeItems(body.items),
