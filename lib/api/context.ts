@@ -112,6 +112,16 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("راجع سلة المنتجات والكميات ثم حاول من جديد.", 400, message);
   }
 
+  if (
+    message.includes("ZERO_DELTA") ||
+    message.includes("EMPTY_ITEMS") ||
+    message.includes("INVALID_ITEM") ||
+    message.includes("INVALID_TOTAL") ||
+    message.includes("INVALID_AMOUNT")
+  ) {
+    return jsonError("راجع البيانات المدخلة ثم حاول من جديد.", 400, message);
+  }
+
   if (message.includes("PACKAGE_ALREADY_ASSIGNED")) {
     return jsonError("هذا الطلب أُسند لمندوب آخر.", 409);
   }
