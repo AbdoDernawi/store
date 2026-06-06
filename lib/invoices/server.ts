@@ -286,11 +286,22 @@ async function getInvoiceIdentity(supabase: InvoiceSupabase, order: InvoiceOrder
     return originalStoreIdentity();
   }
 
-  const { data } = await supabase
+  const result = await supabase
     .from("virtual_stores")
     .select("store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note, invoice_template")
     .eq("id", order.virtual_store_id)
     .maybeSingle();
+  let data = result.data;
+
+  if (result.error && String(result.error.message || "").includes("invoice_template")) {
+    const fallback = await supabase
+      .from("virtual_stores")
+      .select("store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note")
+      .eq("id", order.virtual_store_id)
+      .maybeSingle();
+
+    data = fallback.data ? { ...fallback.data, invoice_template: "modern" } : null;
+  }
 
   return {
     address: data?.address || null,

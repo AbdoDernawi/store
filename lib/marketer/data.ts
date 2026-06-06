@@ -378,13 +378,23 @@ export async function getMarketerVirtualStore(user: AuthSession): Promise<Market
     return null;
   }
 
-  const { data } = await supabase
+  const result = await supabase
     .from("virtual_stores")
     .select("id, store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note, invoice_template")
     .eq("marketer_id", user.id)
     .maybeSingle();
 
-  return (data as MarketerVirtualStore | null) || null;
+  if (result.error && String(result.error.message || "").includes("invoice_template")) {
+    const fallback = await supabase
+      .from("virtual_stores")
+      .select("id, store_name, logo_url, primary_color, secondary_color, contact_phone, address, invoice_note")
+      .eq("marketer_id", user.id)
+      .maybeSingle();
+
+    return fallback.data ? ({ ...fallback.data, invoice_template: "modern" } as MarketerVirtualStore) : null;
+  }
+
+  return (result.data as MarketerVirtualStore | null) || null;
 }
 
 export async function getMarketerNotifications(user: AuthSession) {
