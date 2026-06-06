@@ -1,5 +1,5 @@
 import { ShieldCheck, Users } from "lucide-react";
-import { UserCreateForm } from "@/components/admin/AdminManagementForms";
+import { UserCreateForm, WalletCodeForm } from "@/components/admin/AdminManagementForms";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { getAdminUsers } from "@/lib/admin/management";
 import { formatDate } from "@/lib/admin/format";
@@ -37,15 +37,16 @@ export default async function AdminUsersPage() {
       </section>
 
       <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-950/5">
-        <div className="hidden grid-cols-[1.2fr_0.9fr_0.8fr_0.8fr] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-4 text-xs font-black text-slate-500 lg:grid">
+        <div className="hidden grid-cols-[1.2fr_0.9fr_0.7fr_0.7fr_1.1fr] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-4 text-xs font-black text-slate-500 lg:grid">
           <span>الاسم</span>
           <span>الهاتف</span>
           <span>الدور</span>
           <span>الحالة</span>
+          <span>رمز المحفظة</span>
         </div>
         <div className="divide-y divide-slate-100">
           {users.map((user) => (
-            <div className="grid gap-3 px-5 py-4 lg:grid-cols-[1.2fr_0.9fr_0.8fr_0.8fr] lg:items-center" key={user.id}>
+            <div className="grid gap-3 px-5 py-4 lg:grid-cols-[1.2fr_0.9fr_0.7fr_0.7fr_1.1fr] lg:items-start" key={user.id}>
               <div>
                 <p className="text-sm font-black text-slate-950">{user.full_name}</p>
                 <p className="mt-1 text-xs font-bold text-slate-500">{formatDate(user.created_at)}</p>
@@ -55,6 +56,13 @@ export default async function AdminUsersPage() {
               <StatusBadge status={user.is_active ? "delivered" : "cancelled"}>
                 {user.is_active ? "نشط" : "متوقف"}
               </StatusBadge>
+              <div>
+                {user.role === "marketer" ? (
+                  <WalletCodeForm userId={user.id} />
+                ) : (
+                  <span className="text-xs font-bold text-slate-400">للمسوقين فقط</span>
+                )}
+              </div>
             </div>
           ))}
           {!users.length ? <div className="px-5 py-12 text-center text-sm font-bold text-slate-500">لا توجد حسابات متاحة للعرض.</div> : null}

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   CreditCard,
   ImagePlus,
+  KeyRound,
   Loader2,
   Plus,
   Save,
@@ -460,6 +461,43 @@ export function UserCreateForm() {
       </div>
       <FieldMessage state={state} />
       <SubmitButton disabled={isPending} icon={Plus} label="إنشاء حساب" />
+    </form>
+  );
+}
+
+export function WalletCodeForm({ userId }: { userId: string }) {
+  const { isPending, run, state } = useJsonAction("عيّن رمزًا خاصًا لفتح محفظة هذا المسوق.");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const success = await run(
+      `/api/admin/users/${userId}/wallet-code`,
+      { code: String(form.get("code") || "") },
+      "تم حفظ رمز المحفظة.",
+    );
+
+    if (success) {
+      event.currentTarget.reset();
+    }
+  }
+
+  return (
+    <form className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={submit}>
+      <input
+        className={inputClass}
+        minLength={4}
+        name="code"
+        placeholder="رمز المحفظة"
+        required
+        type="password"
+      />
+      <SubmitButton disabled={isPending} icon={KeyRound} label="حفظ الرمز" />
+      {state.tone !== "idle" ? (
+        <div className="sm:col-span-2">
+          <FieldMessage state={state} />
+        </div>
+      ) : null}
     </form>
   );
 }
