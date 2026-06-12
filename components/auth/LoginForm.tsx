@@ -8,6 +8,17 @@ type AuthResponse = {
   redirectTo?: string;
 };
 
+const demoPassword = "Demo@123456";
+
+const demoAccounts = [
+  { id: "super-admin", label: "مدير عام", phone: "+218910000001" },
+  { id: "admin", label: "أدمن", phone: "+218910000002" },
+  { id: "marketer", label: "مسوق", phone: "+218910000003" },
+  { id: "delivery", label: "مندوب", phone: "+218910000004" },
+  { id: "customer-1", label: "زبون 1", phone: "+218910000005" },
+  { id: "customer-2", label: "زبون 2", phone: "+218910000006" },
+];
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,8 +54,31 @@ export function LoginForm() {
     router.refresh();
   }
 
+  function fillDemoAccount(phoneNumber: string) {
+    setPhone(phoneNumber);
+    setPassword(demoPassword);
+    setError("");
+  }
+
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
+      <div className="rounded-[1.25rem] bg-emerald-50/70 p-3 ring-1 ring-emerald-100">
+        <p className="mb-3 text-xs font-black text-emerald-800">دخول تجريبي سريع</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {demoAccounts.map((account) => (
+            <button
+              className="h-10 rounded-full bg-white px-3 text-xs font-black text-slate-700 shadow-sm ring-1 ring-emerald-100 transition hover:bg-emerald-600 hover:text-white"
+              data-testid={`demo-login-${account.id}`}
+              key={account.id}
+              onClick={() => fillDemoAccount(account.phone)}
+              type="button"
+            >
+              {account.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-2">
         <label className="block text-sm font-bold text-slate-700" htmlFor="phone">
           رقم الهاتف
