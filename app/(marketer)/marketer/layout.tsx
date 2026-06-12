@@ -53,6 +53,7 @@ export default async function MarketerLayout({
                 aria-label="الإشعارات"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-sky-700 ring-1 ring-sky-100 transition hover:bg-sky-100"
                 href="/marketer/notifications"
+                prefetch={false}
                 title="الإشعارات"
               >
                 <Bell size={18} />
@@ -84,6 +85,7 @@ export default async function MarketerLayout({
                 className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-[1.35rem] text-[11px] font-black text-[#d9d3cd] transition hover:bg-white/10 hover:text-white"
                 href={item.href}
                 key={item.label}
+                prefetch={false}
               >
                 <Icon size={19} />
                 <span className="max-w-full truncate">{item.label}</span>

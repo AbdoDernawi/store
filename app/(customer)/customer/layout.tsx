@@ -65,6 +65,7 @@ export default async function CustomerLayout({
                 className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-[1.35rem] text-[11px] font-black text-[#d9d3cd] transition hover:bg-white/10 hover:text-white"
                 href={item.href}
                 key={item.label}
+                prefetch={false}
               >
                 <Icon size={19} />
                 <span className="max-w-full truncate">{item.label}</span>

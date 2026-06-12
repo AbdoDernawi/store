@@ -45,6 +45,7 @@ export default async function DeliveryLayout({
                 aria-label="مسح QR"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 transition hover:bg-emerald-100"
                 href="/delivery/scan"
+                prefetch={false}
                 title="مسح QR"
               >
                 <ScanLine size={18} />
@@ -53,6 +54,7 @@ export default async function DeliveryLayout({
                 aria-label="العهدة"
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-sky-700 ring-1 ring-sky-100 transition hover:bg-sky-100"
                 href="/delivery/handover"
+                prefetch={false}
                 title="العهدة"
               >
                 <Truck size={18} />
@@ -84,6 +86,7 @@ export default async function DeliveryLayout({
                 className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-[1.1rem] text-[11px] font-black text-slate-500 transition hover:bg-teal-50 hover:text-teal-700"
                 href={item.href}
                 key={item.label}
+                prefetch={false}
               >
                 <Icon size={19} />
                 <span className="max-w-full truncate">{item.label}</span>
