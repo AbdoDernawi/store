@@ -99,7 +99,7 @@ export default async function AdminFinancePage() {
                 <div>
                   <p className="text-sm font-black text-slate-900">{handover.users?.full_name || "مندوب"}</p>
                   <p className="mt-1 text-xs font-bold text-slate-500">
-                    {formatNumber(handover.order_ids?.length || 0)} طلب · {handover.type === "return" ? "مرتجعات" : "كاش"}
+                    {formatNumber(handover.order_ids?.length || 0)} طلب · {handover.type === "return_goods" ? "مرتجعات" : "كاش"}
                   </p>
                 </div>
                 <p className="text-sm font-black text-emerald-700">{formatMoney(handover.total_amount)}</p>

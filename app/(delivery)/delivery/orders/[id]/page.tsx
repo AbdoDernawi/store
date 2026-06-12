@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Banknote, History, MapPin, MessageCircle, PackageCheck, Phone } from "lucide-react";
+import { ArrowRight, Banknote, Building2, History, MapPin, MessageCircle, PackageCheck, Phone } from "lucide-react";
 import { DeliveryOrderActions } from "@/components/delivery/DeliveryOrderActions";
 import {
   formatDate,
@@ -73,6 +73,15 @@ export default async function DeliveryOrderDetailsPage({
             icon={Banknote}
             label="الدفع"
             value={paidTransfer ? "✅ مدفوع بتحويل — لا تطلب مالاً" : `${paymentMethodLabels[details.order.payment_method] || details.order.payment_method} · ${paymentStatusLabels[details.order.payment_status] || details.order.payment_status}`}
+          />
+          <InfoLine
+            icon={Building2}
+            label="المتجر / الشركة"
+            value={
+              details.order.store_phone
+                ? `${details.order.store_name} · ${details.order.store_phone}`
+                : details.order.store_name
+            }
           />
         </div>
 

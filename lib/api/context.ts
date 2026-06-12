@@ -138,8 +138,12 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("اختر طلباً واحداً على الأقل لإنشاء العهدة.", 400, message);
   }
 
+  if (message.includes("INVALID_RETURN_HANDOVER_ITEMS")) {
+    return jsonError("عهدة المرتجعات تقبل المنتجات الراجعة أو الملغية فقط وبكميات صحيحة.", 400, message);
+  }
+
   if (message.includes("INVALID_RETURN_HANDOVER")) {
-    return jsonError("عهدة المرتجعات تقبل الطلبات الراجعة فقط.", 400, message);
+    return jsonError("عهدة المرتجعات تقبل الطلبات الراجعة أو الملغية فقط.", 400, message);
   }
 
   if (message.includes("INVALID_EXCUSE_REASON")) {

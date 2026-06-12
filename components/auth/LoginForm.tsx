@@ -51,7 +51,7 @@ export function LoginForm() {
         </label>
         <input
           autoComplete="tel"
-          className="w-full border border-slate-200 bg-white px-4 py-3 text-base text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+          className="h-12 w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-base font-bold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-50"
           id="phone"
           inputMode="tel"
           name="phone"
@@ -69,7 +69,7 @@ export function LoginForm() {
         </label>
         <input
           autoComplete="current-password"
-          className="w-full border border-slate-200 bg-white px-4 py-3 text-base text-slate-950 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+          className="h-12 w-full rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-base font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-50"
           id="password"
           minLength={8}
           name="password"
@@ -81,11 +81,13 @@ export function LoginForm() {
       </div>
 
       {error ? (
-        <p className="bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>
+        <p className="rounded-[1rem] bg-red-50 px-4 py-3 text-sm font-black leading-6 text-red-700 ring-1 ring-red-100">
+          {error}
+        </p>
       ) : null}
 
       <button
-        className="w-full border border-emerald-700 bg-emerald-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-12 w-full rounded-full bg-emerald-600 px-5 text-sm font-black text-white shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
         disabled={isSubmitting}
         type="submit"
       >

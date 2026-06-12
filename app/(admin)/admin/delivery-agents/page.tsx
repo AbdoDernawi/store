@@ -53,7 +53,7 @@ export default async function AdminDeliveryAgentsPage() {
                     <div>
                       <p className="text-sm font-black text-emerald-800">{formatMoney(handover.total_amount)}</p>
                       <p className="mt-1 text-xs font-bold text-emerald-700">
-                        {handover.type === "return" ? "مرتجعات" : "كاش"} · {formatNumber(handover.order_ids?.length || 0)} طلب
+                        {handover.type === "return_goods" ? "مرتجعات" : "كاش"} · {formatNumber(handover.order_ids?.length || 0)} طلب
                       </p>
                     </div>
                     <HandoverConfirmButton handoverId={handover.id} />

@@ -8,6 +8,8 @@ export type MarketerCatalogVariant = {
   type: string | null;
   image_url: string | null;
   extra_price: number;
+  available_quantity: number;
+  city_quantities: Record<string, number>;
 };
 
 export type MarketerCatalogProduct = {
@@ -19,6 +21,8 @@ export type MarketerCatalogProduct = {
   images: Array<{ thumb?: string; medium?: string; large?: string }>;
   marketer_price: number;
   ordered_quantity: number;
+  available_quantity: number;
+  city_quantities: Record<string, number>;
   variants: MarketerCatalogVariant[];
 };
 
@@ -420,11 +424,15 @@ function normalizeCatalog(rows: unknown[]): MarketerCatalogProduct[] {
       images?: unknown;
       marketer_price?: string | number | null;
       ordered_quantity?: string | number | null;
+      available_quantity?: string | number | null;
+      city_quantities?: unknown;
       variants?: unknown;
     };
 
     return {
       ...product,
+      available_quantity: Number(product.available_quantity || 0),
+      city_quantities: normalizeCityQuantities(product.city_quantities),
       images: Array.isArray(product.images) ? product.images : [],
       marketer_price: Number(product.marketer_price || 0),
       ordered_quantity: Number(product.ordered_quantity || 0),
@@ -439,10 +447,16 @@ function normalizeVariants(value: unknown): MarketerCatalogVariant[] {
   }
 
   return value.map((variant) => {
-    const row = variant as MarketerCatalogVariant & { extra_price?: string | number | null };
+    const row = variant as MarketerCatalogVariant & {
+      available_quantity?: string | number | null;
+      city_quantities?: unknown;
+      extra_price?: string | number | null;
+    };
 
     return {
       id: row.id,
+      available_quantity: Number(row.available_quantity || 0),
+      city_quantities: normalizeCityQuantities(row.city_quantities),
       color: row.color || null,
       size: row.size || null,
       type: row.type || null,
@@ -450,6 +464,19 @@ function normalizeVariants(value: unknown): MarketerCatalogVariant[] {
       extra_price: Number(row.extra_price || 0),
     };
   });
+}
+
+function normalizeCityQuantities(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([cityId, quantity]) => [
+      cityId,
+      Number(quantity || 0),
+    ]),
+  );
 }
 
 function normalizeZones(rows: unknown[]): MarketerZone[] {

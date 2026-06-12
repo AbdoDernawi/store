@@ -36,7 +36,30 @@ export type DeliveryOrderListItem = {
   payment_method: string;
   payment_status: string;
   status: string;
+  store_name: string;
+  store_phone: string | null;
   created_at: string;
+};
+
+export type DeliveryCustodyProductItem = {
+  id: string;
+  order_id: string;
+  order_number: number | null;
+  order_status: string;
+  customer_name: string;
+  city_name: string;
+  zone_name: string;
+  store_name: string;
+  product_id: string;
+  product_name: string;
+  variant_id: string;
+  variant_label: string;
+  image_url: string | null;
+  warehouse_id: string | null;
+  quantity: number;
+  custody_quantity: number;
+  returnable_quantity: number;
+  returnable: boolean;
 };
 
 export type DeliveryOrderDetails = {
@@ -104,6 +127,7 @@ export type DeliveryNotification = {
 
 const custodyStatuses = ["out_for_delivery"];
 const handoverCashStatuses = ["delivered", "partial_return", "full_return"];
+const handoverReturnStatuses = ["partial_return", "full_return", "cancelled"];
 const finishedStatuses = ["delivered", "partial_return", "full_return"];
 
 export async function getDeliveryDashboardData(): Promise<DeliveryDashboardData> {
@@ -142,7 +166,13 @@ export async function getDeliveryCustody(user: AuthSession) {
   const supabase = createUserRouteClient();
 
   if (!supabase) {
-    return { orders: [] as DeliveryOrderListItem[] };
+    return { items: [] as DeliveryCustodyProductItem[], orders: [] as DeliveryOrderListItem[] };
+  }
+
+  const { data: custodyData, error: custodyError } = await supabase.rpc("get_delivery_custody");
+
+  if (!custodyError && custodyData) {
+    return normalizeCustodyData(custodyData);
   }
 
   const [ordersResult, citiesResult, zonesResult] = await Promise.all([
@@ -163,6 +193,7 @@ export async function getDeliveryCustody(user: AuthSession) {
   const zoneNames = new Map((zonesResult.data || []).map((zone) => [zone.id, zone.name_ar]));
 
   return {
+    items: [] as DeliveryCustodyProductItem[],
     orders: normalizeOrderList(ordersResult.data || [], cityNames, zoneNames),
   };
 }
@@ -214,7 +245,7 @@ export async function getDeliveryHandoverData(user: AuthSession) {
         "id, order_number, customer_name, customer_phone, customer_address, city_id, zone_id, total, delivery_fee, payment_method, payment_status, status, created_at",
       )
       .eq("delivery_id", user.id)
-      .in("status", ["partial_return", "full_return"])
+      .in("status", handoverReturnStatuses)
       .order("created_at", { ascending: false })
       .limit(100),
     supabase
@@ -334,8 +365,65 @@ function normalizeOrderList(
       ...order,
       city_name: cityNames.get(order.city_id) || "-",
       delivery_fee: Number(order.delivery_fee || 0),
+      store_name: order.store_name || "متجر الشركة",
+      store_phone: order.store_phone || null,
       total: Number(order.total || 0),
       zone_name: zoneNames.get(order.zone_id) || "-",
+    };
+  });
+}
+
+function normalizeCustodyData(value: unknown): {
+  items: DeliveryCustodyProductItem[];
+  orders: DeliveryOrderListItem[];
+} {
+  const data = value as {
+    items?: unknown[];
+    orders?: unknown[];
+  };
+
+  return {
+    items: normalizeCustodyItems(Array.isArray(data.items) ? data.items : []),
+    orders: normalizeRpcOrderList(Array.isArray(data.orders) ? data.orders : []),
+  };
+}
+
+function normalizeRpcOrderList(rows: unknown[]): DeliveryOrderListItem[] {
+  return rows.map((row) => {
+    const order = row as DeliveryOrderListItem & {
+      delivery_fee?: string | number | null;
+      order_number?: string | number | null;
+      total?: string | number | null;
+    };
+
+    return {
+      ...order,
+      delivery_fee: Number(order.delivery_fee || 0),
+      order_number: order.order_number ? Number(order.order_number) : null,
+      store_name: order.store_name || "متجر الشركة",
+      store_phone: order.store_phone || null,
+      total: Number(order.total || 0),
+    };
+  });
+}
+
+function normalizeCustodyItems(rows: unknown[]): DeliveryCustodyProductItem[] {
+  return rows.map((row) => {
+    const item = row as DeliveryCustodyProductItem & {
+      custody_quantity?: string | number | null;
+      order_number?: string | number | null;
+      quantity?: string | number | null;
+      returnable_quantity?: string | number | null;
+    };
+
+    return {
+      ...item,
+      custody_quantity: Number(item.custody_quantity || 0),
+      order_number: item.order_number ? Number(item.order_number) : null,
+      quantity: Number(item.quantity || 0),
+      returnable: Boolean(item.returnable),
+      returnable_quantity: Number(item.returnable_quantity || 0),
+      store_name: item.store_name || "متجر الشركة",
     };
   });
 }
@@ -355,6 +443,8 @@ function normalizeOrderDetails(value: unknown): DeliveryOrderDetails {
       ...details.order,
       delivery_fee: Number(details.order.delivery_fee || 0),
       discount_amount: Number(details.order.discount_amount || 0),
+      store_name: details.order.store_name || "متجر الشركة",
+      store_phone: details.order.store_phone || null,
       total: Number(details.order.total || 0),
       subtotal: Number(details.order.subtotal || 0),
     },

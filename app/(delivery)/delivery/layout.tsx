@@ -6,8 +6,10 @@ import { redirectPathForRole, requireCurrentUser, signOut } from "@/lib/auth";
 const navItems = [
   { href: "/delivery/dashboard", icon: Home, label: "الرئيسية" },
   { href: "/delivery/custody", icon: PackageCheck, label: "عهدتي" },
+  { href: "/delivery/handover", icon: Truck, label: "العهدة" },
   { href: "/delivery/report", icon: BarChart3, label: "تقريري" },
   { href: "/delivery/notifications", icon: Bell, label: "الإشعارات" },
+  { href: "/delivery/account", icon: UserRound, label: "حسابي" },
 ];
 
 export default async function DeliveryLayout({
@@ -73,7 +75,7 @@ export default async function DeliveryLayout({
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 box-border overflow-hidden border-t border-slate-200 bg-white/95 px-2 py-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
-        <div className="mx-auto grid w-full max-w-5xl grid-cols-4 gap-1">
+        <div className="mx-auto grid w-full max-w-5xl grid-cols-6 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
 

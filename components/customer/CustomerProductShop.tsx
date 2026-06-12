@@ -62,6 +62,7 @@ function toStorefrontProduct(product: CustomerCatalogProduct): StorefrontProduct
     basePrice: product.customer_price,
     categoryId: product.category_id,
     categoryName: product.category_name,
+    cityQuantities: product.city_quantities,
     description: product.description_ar,
     id: product.id,
     images: product.images,
@@ -69,6 +70,7 @@ function toStorefrontProduct(product: CustomerCatalogProduct): StorefrontProduct
     orderedQuantity: product.ordered_quantity,
     variants: product.variants.map((variant) => ({
       availableQuantity: variant.available_quantity,
+      cityQuantities: variant.city_quantities,
       color: variant.color,
       extraPrice: variant.extra_price,
       id: variant.id,

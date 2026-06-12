@@ -119,17 +119,20 @@ export function DeliveryOrderActions({
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-50 text-teal-700">
             <Truck size={18} />
           </span>
-          <h3 className="text-base font-black text-slate-950">نتيجة التسليم</h3>
+          <h3 className="text-base font-black text-slate-950">تغيير حالة الطلب</h3>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-3">
           <ModeButton active={mode === "full"} icon={CheckCircle2} label="تسليم كامل" onClick={() => setMode("full")} />
-          <ModeButton active={mode === "partial_return"} icon={RotateCcw} label="راجع جزئي" onClick={() => setMode("partial_return")} />
+          <ModeButton active={mode === "partial_return"} icon={RotateCcw} label="تسليم جزئي" onClick={() => setMode("partial_return")} />
           <ModeButton active={mode === "full_return"} icon={AlertCircle} label="راجع كامل" onClick={() => setMode("full_return")} />
         </div>
 
         {mode === "partial_return" ? (
           <div className="mt-4 space-y-3 rounded-[1.1rem] bg-slate-50 p-3 ring-1 ring-slate-100">
+            <p className="text-xs font-black leading-6 text-slate-500">
+              حدد الكميات التي سترجع فقط، والباقي يعتبر تم تسليمه للزبون.
+            </p>
             {items.map((item) => (
               <label className="grid gap-3 rounded-[1rem] bg-white p-3 ring-1 ring-slate-100 sm:grid-cols-[1fr_auto]" key={item.id}>
                 <span className="min-w-0">

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   ArrowLeft,
@@ -33,6 +33,7 @@ export type StorefrontImage = {
 
 export type StorefrontVariant = {
   availableQuantity?: number | null;
+  cityQuantities?: Record<string, number>;
   color: string | null;
   extraPrice: number;
   id: string;
@@ -46,6 +47,7 @@ export type StorefrontProduct = {
   basePrice: number;
   categoryId: string | null;
   categoryName: string | null;
+  cityQuantities?: Record<string, number>;
   description: string | null;
   id: string;
   images: StorefrontImage[];
@@ -157,6 +159,7 @@ export function ShoppingExperience({
   const [transferImageUrl, setTransferImageUrl] = useState("");
   const [uploadingTransfer, setUploadingTransfer] = useState(false);
   const favoriteStorageKey = `storefront-favorites:${mode}`;
+  const previousCityIdRef = useRef(recipient.cityId);
 
   useEffect(() => {
     try {
@@ -179,10 +182,15 @@ export function ShoppingExperience({
     }, new Map<string, StorefrontZone[]>());
   }, [zones]);
 
+  const cityAwareProducts = useMemo(
+    () => products.map((product) => productForCity(product, recipient.cityId)),
+    [products, recipient.cityId],
+  );
+
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
 
-    return products.filter((product) => {
+    return cityAwareProducts.filter((product) => {
       const matchesCategory = activeCategory === "all" || product.categoryId === activeCategory;
       const matchesSearch =
         !normalizedSearch ||
@@ -191,12 +199,25 @@ export function ShoppingExperience({
 
       return matchesCategory && matchesSearch;
     });
-  }, [activeCategory, products, search]);
+  }, [activeCategory, cityAwareProducts, search]);
 
-  const latestProducts = filteredProducts.slice(0, 8);
+  const citySortedProducts = useMemo(
+    () => sortProductsForCity(filteredProducts, recipient.cityId),
+    [filteredProducts, recipient.cityId],
+  );
+  const availableInCityCount = recipient.cityId
+    ? filteredProducts.filter((product) => getProductLimit(product, recipient.cityId) > 0).length
+    : filteredProducts.length;
+  const latestProducts = citySortedProducts.slice(0, 8);
   const popularProducts = useMemo(() => {
     return [...filteredProducts]
       .sort((left, right) => {
+        const availabilityOrder = compareProductCityAvailability(left, right, recipient.cityId);
+
+        if (availabilityOrder !== 0) {
+          return availabilityOrder;
+        }
+
         if (left.orderedQuantity !== right.orderedQuantity) {
           return right.orderedQuantity - left.orderedQuantity;
         }
@@ -204,9 +225,9 @@ export function ShoppingExperience({
         return right.variants.length - left.variants.length;
       })
       .slice(0, 8);
-  }, [filteredProducts]);
+  }, [filteredProducts, recipient.cityId]);
 
-  const selectedProduct = products.find((product) => product.id === selectedProductId) || null;
+  const selectedProduct = cityAwareProducts.find((product) => product.id === selectedProductId) || null;
   const selectedVariant =
     selectedProduct?.variants.find((variant) => variant.id === selectedVariantId) ||
     selectedProduct?.variants[0] ||
@@ -217,14 +238,52 @@ export function ShoppingExperience({
   const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const orderTotal = subtotal + deliveryFee;
   const favoriteProducts = useMemo(
-    () => products.filter((product) => favoriteIds.includes(product.id)),
-    [favoriteIds, products],
+    () => sortProductsForCity(cityAwareProducts.filter((product) => favoriteIds.includes(product.id)), recipient.cityId),
+    [cityAwareProducts, favoriteIds, recipient.cityId],
   );
   const heroProduct = latestProducts[0] || firstProduct;
 
+  useEffect(() => {
+    if (previousCityIdRef.current === recipient.cityId) {
+      return;
+    }
+
+    previousCityIdRef.current = recipient.cityId;
+
+    if (!recipient.cityId) {
+      return;
+    }
+
+    setCart((current) =>
+      current.flatMap((item) => {
+        const variant = findVariantById(products, item.variantId);
+        const availableQuantity = (variant ? getVariantLimit(variant, recipient.cityId) : 0) ?? 0;
+
+        if (availableQuantity <= 0) {
+          return [];
+        }
+
+        return [
+          {
+            ...item,
+            availableQuantity,
+            quantity: Math.min(item.quantity, availableQuantity),
+          },
+        ];
+      }),
+    );
+
+    if (cart.length) {
+      setState({
+        message: "تم تحديث السلة حسب توفر المدينة المختارة.",
+        tone: "idle",
+      });
+    }
+  }, [cart.length, products, recipient.cityId]);
+
   function openProduct(product: StorefrontProduct) {
     setSelectedProductId(product.id);
-    setSelectedVariantId(product.variants[0]?.id || "");
+    setSelectedVariantId(firstOrderableVariant(product, recipient.cityId)?.id || product.variants[0]?.id || "");
     setQuantity(1);
     setProductModalOpen(true);
   }
@@ -275,7 +334,12 @@ export function ShoppingExperience({
       return;
     }
 
-    const availableQuantity = getVariantLimit(selectedVariant);
+    if (!recipient.cityId) {
+      setState({ message: "اختر المدينة أولا حتى نعرض المنتجات المتوفرة لك.", tone: "error" });
+      return;
+    }
+
+    const availableQuantity = getVariantLimit(selectedVariant, recipient.cityId);
 
     if (availableQuantity !== null && availableQuantity <= 0) {
       setState({ message: "هذا الخيار غير متوفر حاليًا.", tone: "error" });
@@ -323,7 +387,7 @@ export function ShoppingExperience({
       return;
     }
 
-    const availableQuantity = getVariantLimit(selectedVariant);
+    const availableQuantity = getVariantLimit(selectedVariant, recipient.cityId);
 
     if (availableQuantity !== null && availableQuantity <= 0) {
       addSelectedToCart();
@@ -475,6 +539,17 @@ export function ShoppingExperience({
         setSearch={setSearch}
       />
 
+      <DeliveryLocationPanel
+        availableProducts={availableInCityCount}
+        cities={cities}
+        deliveryFee={deliveryFee}
+        mode={mode}
+        recipient={recipient}
+        setRecipient={setRecipient}
+        totalProducts={filteredProducts.length}
+        zones={cityZones}
+      />
+
       <CategoryStrip
         activeCategory={activeCategory}
         categories={categories}
@@ -599,6 +674,97 @@ export function ShoppingExperience({
         />
       </StorefrontModal>
     </div>
+  );
+}
+
+function DeliveryLocationPanel({
+  availableProducts,
+  cities,
+  deliveryFee,
+  mode,
+  recipient,
+  setRecipient,
+  totalProducts,
+  zones,
+}: {
+  availableProducts: number;
+  cities: StorefrontCity[];
+  deliveryFee: number;
+  mode: "customer" | "marketer";
+  recipient: RecipientForm;
+  setRecipient: React.Dispatch<React.SetStateAction<RecipientForm>>;
+  totalProducts: number;
+  zones: StorefrontZone[];
+}) {
+  const citySelected = Boolean(recipient.cityId);
+
+  return (
+    <section className="rounded-[1.7rem] border border-[#eee5db] bg-white p-4 shadow-sm shadow-[#4b3c2e]/5">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f5e9db] text-[#8b6548]">
+            <MapPin size={20} />
+          </span>
+          <div>
+            <p className="text-xs font-black text-[#9a8b7e]">خطوة البداية</p>
+            <h3 className="text-lg font-black text-[#29252b]">
+              {mode === "customer" ? "اختاري مدينة التوصيل" : "اختيار مدينة زبون الطلب"}
+            </h3>
+          </div>
+        </div>
+        <span className="w-fit rounded-full bg-[#f8f4ed] px-3 py-1 text-xs font-black text-[#8b6548] ring-1 ring-[#eadccf]">
+          {citySelected
+            ? `${availableProducts.toLocaleString("ar-LY")} من ${totalProducts.toLocaleString("ar-LY")} متوفر`
+            : "اختيار المدينة يرتب المنتجات"}
+        </span>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+        <label>
+          <span className="mb-2 block text-xs font-black text-[#7b6f65]">المدينة</span>
+          <select
+            className={inputClass}
+            onChange={(event) =>
+              setRecipient((current) => ({
+                ...current,
+                cityId: event.target.value,
+                zoneId: "",
+              }))
+            }
+            value={recipient.cityId}
+          >
+            <option value="">اختيار المدينة</option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>
+                {city.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span className="mb-2 block text-xs font-black text-[#7b6f65]">المنطقة</span>
+          <select
+            className={inputClass}
+            disabled={!recipient.cityId}
+            onChange={(event) => setRecipient((current) => ({ ...current, zoneId: event.target.value }))}
+            value={recipient.zoneId}
+          >
+            <option value="">اختيار المنطقة</option>
+            {zones.map((zone) => (
+              <option key={zone.id} value={zone.id}>
+                {zone.name} - {formatMoney(zone.deliveryFee)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="rounded-[1.15rem] bg-[#f6eee4] px-4 py-3 text-sm font-black text-[#6f553f] ring-1 ring-[#eadccf]">
+          <span className="block text-xs text-[#9a8b7e]">التوصيل</span>
+          {recipient.zoneId ? formatMoney(deliveryFee) : "بعد اختيار المنطقة"}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1204,6 +1370,8 @@ function CartPanel({
   subtotal: number;
   updateCartQuantity: (variantId: string, nextQuantity: number) => void;
 }) {
+  const total = subtotal + deliveryFee;
+
   return (
     <section className="rounded-[1.9rem] border border-[#eee5db] bg-white p-4 shadow-sm shadow-[#4b3c2e]/5">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -1269,7 +1437,7 @@ function CartPanel({
       <div className="mt-4 grid gap-2 rounded-[1.35rem] bg-[#f6eee4] p-4 ring-1 ring-[#eadccf] sm:grid-cols-3">
         <AmountLine label="المنتجات" value={formatMoney(subtotal)} />
         <AmountLine label="التوصيل" value={formatMoney(deliveryFee)} />
-        <AmountLine label="إجمالي الطلب" strong value={formatMoney(subtotal)} />
+        <AmountLine label="إجمالي الطلب" strong value={formatMoney(total)} />
       </div>
     </section>
   );
@@ -1660,7 +1828,19 @@ function galleryForProduct(
   ]);
 }
 
-function getVariantLimit(variant: StorefrontVariant) {
+function getProductLimit(product: StorefrontProduct, cityId?: string) {
+  if (cityId && product.cityQuantities && Object.keys(product.cityQuantities).length > 0) {
+    return Number(product.cityQuantities?.[cityId] || 0);
+  }
+
+  return typeof product.availableQuantity === "number" ? product.availableQuantity : 0;
+}
+
+function getVariantLimit(variant: StorefrontVariant, cityId?: string) {
+  if (cityId && variant.cityQuantities && Object.keys(variant.cityQuantities).length > 0) {
+    return Number(variant.cityQuantities?.[cityId] || 0);
+  }
+
   return typeof variant.availableQuantity === "number" ? variant.availableQuantity : null;
 }
 
@@ -1699,6 +1879,68 @@ function productCanBeOrdered(product: StorefrontProduct) {
   }
 
   return product.variants.length > 0;
+}
+
+function productForCity(product: StorefrontProduct, cityId?: string): StorefrontProduct {
+  if (!cityId) {
+    return product;
+  }
+
+  return {
+    ...product,
+    availableQuantity: getProductLimit(product, cityId),
+    variants: product.variants.map((variant) => ({
+      ...variant,
+      availableQuantity: getVariantLimit(variant, cityId),
+    })),
+  };
+}
+
+function compareProductCityAvailability(
+  left: StorefrontProduct,
+  right: StorefrontProduct,
+  cityId?: string,
+) {
+  if (!cityId) {
+    return 0;
+  }
+
+  const leftQuantity = getProductLimit(left, cityId);
+  const rightQuantity = getProductLimit(right, cityId);
+
+  if (leftQuantity > 0 && rightQuantity <= 0) {
+    return -1;
+  }
+
+  if (rightQuantity > 0 && leftQuantity <= 0) {
+    return 1;
+  }
+
+  return rightQuantity - leftQuantity;
+}
+
+function sortProductsForCity(products: StorefrontProduct[], cityId?: string) {
+  if (!cityId) {
+    return products;
+  }
+
+  return [...products].sort((left, right) => {
+    const availabilityOrder = compareProductCityAvailability(left, right, cityId);
+
+    if (availabilityOrder !== 0) {
+      return availabilityOrder;
+    }
+
+    return right.orderedQuantity - left.orderedQuantity;
+  });
+}
+
+function firstOrderableVariant(product: StorefrontProduct, cityId?: string) {
+  return product.variants.find((variant) => (getVariantLimit(variant, cityId) ?? 0) > 0) || null;
+}
+
+function findVariantById(products: StorefrontProduct[], variantId: string) {
+  return products.flatMap((product) => product.variants).find((variant) => variant.id === variantId) || null;
 }
 
 function recipientFromSaved(recipient?: StorefrontRecipient | null): RecipientForm {

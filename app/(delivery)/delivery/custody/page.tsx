@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, Banknote, MapPin, MessageCircle, PackageCheck, Phone, ReceiptText } from "lucide-react";
+import { ArrowUpRight, Banknote, Building2, MapPin, MessageCircle, PackageCheck, Phone, ReceiptText } from "lucide-react";
+import { DeliveryCustodyProductsPanel } from "@/components/delivery/DeliveryCustodyProductsPanel";
 import {
   formatDate,
   formatMoney,
@@ -12,18 +13,27 @@ import { getDeliveryCustody, type DeliveryOrderListItem } from "@/lib/delivery/d
 
 export default async function DeliveryCustodyPage() {
   const user = await requireCurrentUser();
-  const { orders } = await getDeliveryCustody(user);
+  const { items, orders } = await getDeliveryCustody(user);
+  const activeOrders = orders.filter((order) => order.status === "out_for_delivery");
+  const returnableItemsCount = items.filter((item) => item.returnable).length;
 
   return (
     <div className="space-y-4">
       <section className="rounded-[1.5rem] bg-white p-4 shadow-sm shadow-slate-950/5 ring-1 ring-slate-200">
         <p className="text-xs font-black text-teal-700">عهدتي</p>
         <h2 className="mt-2 text-2xl font-black leading-9 text-slate-950">طلباتك الحالية في مكان واحد</h2>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <MetricPill label="طلبات قيد التوصيل" value={activeOrders.length.toLocaleString("ar-LY")} />
+          <MetricPill label="منتجات بالعهدة" value={items.length.toLocaleString("ar-LY")} />
+          <MetricPill label="تحتاج ترجيع" value={returnableItemsCount.toLocaleString("ar-LY")} />
+        </div>
       </section>
 
+      <DeliveryCustodyProductsPanel items={items} />
+
       <section className="space-y-3">
-        {orders.length ? (
-          orders.map((order) => <CustodyCard key={order.id} order={order} />)
+        {activeOrders.length ? (
+          activeOrders.map((order) => <CustodyCard key={order.id} order={order} />)
         ) : (
           <div className="rounded-[1.35rem] bg-white p-6 text-center shadow-sm shadow-slate-950/5 ring-1 ring-slate-200">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 text-teal-700">
@@ -64,6 +74,21 @@ function CustodyCard({ order }: { order: DeliveryOrderListItem }) {
             <Phone size={15} />
             {order.customer_phone}
           </a>
+          <div className="mt-3 rounded-[1rem] bg-slate-50 p-3 ring-1 ring-slate-100">
+            <p className="flex items-center gap-2 text-xs font-black text-slate-500">
+              <Building2 size={15} />
+              {order.store_name}
+            </p>
+            {order.store_phone ? (
+              <a
+                className="mt-2 inline-flex items-center gap-1 text-sm font-black text-sky-700"
+                href={`tel:${order.store_phone}`}
+              >
+                <Phone size={15} />
+                {order.store_phone}
+              </a>
+            ) : null}
+          </div>
         </div>
 
         <div className="rounded-[1.1rem] bg-emerald-50 px-4 py-3 text-right ring-1 ring-emerald-100 sm:text-left">
@@ -116,10 +141,19 @@ function CustodyCard({ order }: { order: DeliveryOrderListItem }) {
           className="inline-flex h-11 items-center justify-center gap-1 rounded-full bg-teal-600 px-3 text-xs font-black text-white transition hover:bg-teal-700"
           href={`/delivery/orders/${order.id}#delivery-actions`}
         >
-          تسليم
+          تغيير الحالة
           <Banknote size={14} />
         </Link>
       </div>
     </article>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-full bg-slate-50 px-4 py-2 ring-1 ring-slate-100">
+      <span className="text-xs font-black text-slate-500">{label}</span>
+      <span className="ms-2 text-sm font-black text-slate-950">{value}</span>
+    </div>
   );
 }

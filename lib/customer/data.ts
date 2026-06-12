@@ -9,6 +9,7 @@ export type CustomerCatalogVariant = {
   image_url: string | null;
   extra_price: number;
   available_quantity: number;
+  city_quantities: Record<string, number>;
 };
 
 export type CustomerCatalogProduct = {
@@ -21,6 +22,7 @@ export type CustomerCatalogProduct = {
   customer_price: number;
   ordered_quantity: number;
   available_quantity: number;
+  city_quantities: Record<string, number>;
   variants: CustomerCatalogVariant[];
 };
 
@@ -334,6 +336,7 @@ function normalizeCatalog(rows: unknown[]): CustomerCatalogProduct[] {
   return rows.map((row) => {
     const product = row as Omit<CustomerCatalogProduct, "images" | "customer_price" | "available_quantity" | "variants"> & {
       available_quantity?: string | number | null;
+      city_quantities?: unknown;
       customer_price?: string | number | null;
       images?: unknown;
       ordered_quantity?: string | number | null;
@@ -343,6 +346,7 @@ function normalizeCatalog(rows: unknown[]): CustomerCatalogProduct[] {
     return {
       ...product,
       available_quantity: Number(product.available_quantity || 0),
+      city_quantities: normalizeCityQuantities(product.city_quantities),
       customer_price: Number(product.customer_price || 0),
       images: Array.isArray(product.images) ? product.images : [],
       ordered_quantity: Number(product.ordered_quantity || 0),
@@ -359,11 +363,13 @@ function normalizeVariants(value: unknown): CustomerCatalogVariant[] {
   return value.map((variant) => {
     const row = variant as CustomerCatalogVariant & {
       available_quantity?: string | number | null;
+      city_quantities?: unknown;
       extra_price?: string | number | null;
     };
 
     return {
       available_quantity: Number(row.available_quantity || 0),
+      city_quantities: normalizeCityQuantities(row.city_quantities),
       color: row.color || null,
       extra_price: Number(row.extra_price || 0),
       id: row.id,
@@ -372,6 +378,19 @@ function normalizeVariants(value: unknown): CustomerCatalogVariant[] {
       type: row.type || null,
     };
   });
+}
+
+function normalizeCityQuantities(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([cityId, quantity]) => [
+      cityId,
+      Number(quantity || 0),
+    ]),
+  );
 }
 
 function normalizeZones(rows: unknown[]): CustomerZone[] {
