@@ -134,6 +134,10 @@ export function mapDatabaseError(error: unknown) {
     return jsonError("لا توجد مبالغ كاش جاهزة للتسليم حالياً.", 409, message);
   }
 
+  if (message.includes("INVALID_CASH_HANDOVER_ORDERS")) {
+    return jsonError("عهدة الكاش تقبل الطلبات المسلمة أو الراجع الجزئي الذي له مبلغ مستحق فقط.", 400, message);
+  }
+
   if (message.includes("NO_HANDOVER_ORDERS")) {
     return jsonError("اختر طلباً واحداً على الأقل لإنشاء العهدة.", 400, message);
   }
