@@ -1,4 +1,5 @@
 import { getApiContext, jsonError, jsonOk, mapDatabaseError, readJsonBody } from "@/lib/api/context";
+import { createClient } from "@supabase/supabase-js";
 import { hashWalletCode } from "@/lib/wallet-codes";
 
 type WalletCodeBody = {
@@ -22,7 +23,13 @@ export async function POST(
     return jsonError("رمز المحفظة يجب أن يكون بين 4 و20 خانة.", 400);
   }
 
-  const { data: marketer, error: marketerError } = await auth.context.supabase
+  const serviceClient = createWalletCodeServiceClient();
+
+  if (!serviceClient) {
+    return jsonError("تعذر تعيين رمز المحفظة الآن. إعدادات الخدمة غير مكتملة.", 503);
+  }
+
+  const { data: marketer, error: marketerError } = await serviceClient
     .from("users")
     .select("id, role, is_active")
     .eq("id", params.id)
@@ -36,7 +43,7 @@ export async function POST(
     return jsonError("يمكن تعيين رمز المحفظة للمسوقين فقط.", 400);
   }
 
-  const { error } = await auth.context.supabase
+  const { error } = await serviceClient
     .from("wallet_access_codes")
     .upsert(
       {
@@ -56,4 +63,17 @@ export async function POST(
   }
 
   return jsonOk();
+}
+
+function createWalletCodeServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
