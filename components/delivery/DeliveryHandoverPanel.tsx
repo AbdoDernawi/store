@@ -35,11 +35,14 @@ export function DeliveryHandoverPanel({
     message: "اختر نوع العهدة، وسيتم إرسالها للإدارة للتأكيد.",
   });
   const selectedCashTotal = useMemo(
-    () => cashOrders.filter((order) => selectedCash.includes(order.id)).reduce((sum, order) => sum + order.total, 0),
+    () =>
+      cashOrders
+        .filter((order) => selectedCash.includes(order.id))
+        .reduce((sum, order) => sum + cashAmountForOrder(order), 0),
     [cashOrders, selectedCash],
   );
   const allCashTotal = useMemo(
-    () => cashOrders.reduce((sum, order) => sum + order.total, 0),
+    () => cashOrders.reduce((sum, order) => sum + cashAmountForOrder(order), 0),
     [cashOrders],
   );
 
@@ -120,6 +123,7 @@ export function DeliveryHandoverPanel({
           {cashOrders.length ? (
             cashOrders.map((order) => (
               <SelectableOrderCard
+                amount={cashAmountForOrder(order)}
                 checked={selectedCash.includes(order.id)}
                 key={order.id}
                 onToggle={() => toggleCash(order.id)}
@@ -226,14 +230,19 @@ export function DeliveryHandoverPanel({
 }
 
 function SelectableOrderCard({
+  amount,
   checked,
   onToggle,
   order,
 }: {
+  amount?: number;
   checked: boolean;
   onToggle: () => void;
   order: DeliveryOrderListItem;
 }) {
+  const displayAmount = typeof amount === "number" ? amount : order.total;
+  const amountAdjusted = typeof amount === "number" && amount !== order.total;
+
   return (
     <button
       className={`w-full rounded-[1.05rem] p-3 text-right ring-1 transition ${
@@ -255,9 +264,24 @@ function SelectableOrderCard({
           {orderStatusLabels[order.status] || order.status}
         </span>
       </div>
-      <p className="mt-2 text-sm font-black text-emerald-700">{formatMoney(order.total)}</p>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-black text-emerald-700">{formatMoney(displayAmount)}</p>
+        {amountAdjusted ? (
+          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-black text-amber-700 ring-1 ring-amber-100">
+            بعد خصم الراجع
+          </span>
+        ) : null}
+      </div>
     </button>
   );
+}
+
+function cashAmountForOrder(order: DeliveryOrderListItem) {
+  return typeof order.cash_collectable_total === "number"
+    ? order.cash_collectable_total
+    : order.status === "full_return"
+      ? 0
+      : order.total;
 }
 
 function EmptyLine({ text }: { text: string }) {

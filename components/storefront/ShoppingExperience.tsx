@@ -527,6 +527,17 @@ export function ShoppingExperience({
 
   return (
     <div className="space-y-5" dir="rtl">
+      <DeliveryLocationPanel
+        availableProducts={availableInCityCount}
+        cities={cities}
+        deliveryFee={deliveryFee}
+        mode={mode}
+        recipient={recipient}
+        setRecipient={setRecipient}
+        totalProducts={filteredProducts.length}
+        zones={cityZones}
+      />
+
       <StorefrontHero
         cartItems={cart.length}
         favoriteCount={favoriteIds.length}
@@ -537,17 +548,6 @@ export function ShoppingExperience({
         onOpenProduct={openProduct}
         search={search}
         setSearch={setSearch}
-      />
-
-      <DeliveryLocationPanel
-        availableProducts={availableInCityCount}
-        cities={cities}
-        deliveryFee={deliveryFee}
-        mode={mode}
-        recipient={recipient}
-        setRecipient={setRecipient}
-        totalProducts={filteredProducts.length}
-        zones={cityZones}
       />
 
       <CategoryStrip
@@ -626,6 +626,7 @@ export function ShoppingExperience({
       />
 
       <StorefrontModal
+        maxWidth="max-w-[480px]"
         onClose={() => setProductModalOpen(false)}
         open={productModalOpen && Boolean(selectedProduct)}
       >
@@ -808,8 +809,8 @@ function StorefrontHero({
         </label>
 
         <div className="flex gap-2">
-          <StatusButton icon={Heart} label="المفضلة" value={favoriteCount} />
-          <StatusButton icon={ShoppingBag} label="السلة" value={cartItems} />
+          <StatusButton icon={Heart} label="المفضلة" onClick={onOpenFavorites} value={favoriteCount} />
+          <StatusButton icon={ShoppingBag} label="السلة" onClick={onOpenCart} value={cartItems} />
           <span
             aria-label="الفلاتر"
             className="flex h-[3.25rem] min-h-[3.25rem] w-[3.25rem] min-w-[3.25rem] items-center justify-center rounded-[1.15rem] bg-[#8b6548] text-white shadow-sm"
@@ -875,17 +876,21 @@ function StorefrontHero({
 function StatusButton({
   icon: Icon,
   label,
+  onClick,
   value,
 }: {
   icon: typeof Heart;
   label: string;
+  onClick: () => void;
   value: number;
 }) {
   return (
-    <span
+    <button
       aria-label={label}
-      className="relative flex h-[3.25rem] min-h-[3.25rem] w-[3.25rem] min-w-[3.25rem] items-center justify-center rounded-[1.15rem] bg-[#f7f2ea] text-[#65584d] ring-1 ring-[#eadccf]"
+      className="relative flex h-[3.25rem] min-h-[3.25rem] w-[3.25rem] min-w-[3.25rem] items-center justify-center rounded-[1.15rem] bg-[#f7f2ea] text-[#65584d] ring-1 ring-[#eadccf] transition hover:bg-[#efe2d4]"
+      onClick={onClick}
       title={label}
+      type="button"
     >
       <Icon size={18} />
       {value ? (
@@ -893,7 +898,7 @@ function StatusButton({
           {value.toLocaleString("ar-LY")}
         </strong>
       ) : null}
-    </span>
+    </button>
   );
 }
 
@@ -909,7 +914,7 @@ function FloatingCartButton({
   return (
     <button
       aria-label="فتح السلة"
-      className="fixed bottom-24 left-4 z-40 flex min-h-[3.5rem] items-center gap-3 rounded-full bg-[#8b6548] px-4 text-white shadow-[0_18px_45px_rgba(78,55,37,0.28)] transition hover:-translate-y-0.5 hover:bg-[#745238]"
+      className="fixed bottom-4 left-4 z-40 flex min-h-[3.65rem] items-center gap-3 rounded-full bg-[#8b6548] px-4 text-white shadow-[0_18px_45px_rgba(78,55,37,0.28)] transition hover:-translate-y-0.5 hover:bg-[#745238] sm:bottom-6"
       onClick={onClick}
       type="button"
     >
@@ -1250,7 +1255,7 @@ function ProductDetail({
         ) : null}
       </div>
 
-      <div className="space-y-4 p-5">
+      <div className="space-y-4 p-5 pb-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-black text-[#9a8b7e]">
@@ -1298,7 +1303,7 @@ function ProductDetail({
           </p>
         ) : null}
 
-        <div className="flex flex-col gap-3 border-t border-[#efe5da] pt-4">
+        <div className="sticky bottom-0 z-10 -mx-5 flex flex-col gap-3 border-t border-[#efe5da] bg-white/95 px-5 pb-5 pt-4 shadow-[0_-16px_35px_rgba(65,48,35,0.08)] backdrop-blur">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black text-[#95887d]">السعر</p>

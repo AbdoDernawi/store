@@ -53,7 +53,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <main className="min-h-screen bg-[#f7faf8] text-slate-950">
+    <main className="min-h-screen overflow-x-hidden bg-[#f7faf8] text-slate-950">
       <div className="mx-auto flex min-h-screen max-w-[1500px] gap-4 px-3 py-3 sm:px-5 sm:py-5">
         <aside className="hidden w-72 shrink-0 flex-col rounded-[1.35rem] border border-emerald-100 bg-white/92 p-3 shadow-sm shadow-emerald-950/5 lg:flex">
           <Link className="mb-5 flex items-center gap-3 rounded-[1.15rem] bg-emerald-50 px-4 py-4" href="/admin/dashboard">
@@ -84,7 +84,7 @@ export default async function AdminLayout({
           </nav>
         </aside>
 
-        <section className="flex min-w-0 flex-1 flex-col gap-4">
+        <section className="flex min-w-0 max-w-full flex-1 flex-col gap-4">
           <header className="rounded-[1.35rem] border border-slate-200 bg-white/92 px-4 py-3 shadow-sm shadow-slate-950/5">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>

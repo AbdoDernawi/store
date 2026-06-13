@@ -251,7 +251,7 @@ export function WarehouseOperationShop({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="min-w-0 space-y-4">
       <section className="rounded-[1.2rem] border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <PanelLabel index="2" title="فلترة المنتجات" />
@@ -274,7 +274,7 @@ export function WarehouseOperationShop({
         </div>
 
         <div className="mt-4 rounded-[1rem] border border-slate-200 bg-white p-3 shadow-sm shadow-slate-950/[0.03]">
-          <div className="grid gap-2 lg:grid-cols-[minmax(230px,1.2fr)_repeat(4,minmax(120px,0.72fr))]">
+          <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(230px,1.2fr)_repeat(4,minmax(120px,0.72fr))]">
             <label className="flex h-11 items-center gap-2 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-sm font-bold text-slate-500 shadow-sm shadow-slate-950/[0.02]">
               <Search size={16} />
               <input
@@ -355,10 +355,22 @@ export function WarehouseOperationShop({
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs font-black text-slate-700">{row.warehouseName}</p>
-                  <p className="text-xs font-black text-slate-700">{row.variant.size || "-"}</p>
-                  <p className="text-xs font-black text-emerald-700">{formatNumber(row.available)}</p>
-                  <p className="text-xs font-black text-sky-700">{formatNumber(row.reserved)}</p>
+                  <p className="flex items-center justify-between gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-700 lg:block lg:bg-transparent lg:px-0 lg:py-0">
+                    <span className="text-[10px] text-slate-400 lg:hidden">المخزن</span>
+                    {row.warehouseName}
+                  </p>
+                  <p className="flex items-center justify-between gap-2 rounded-full bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-700 lg:block lg:bg-transparent lg:px-0 lg:py-0">
+                    <span className="text-[10px] text-slate-400 lg:hidden">المقاس</span>
+                    {row.variant.size || "-"}
+                  </p>
+                  <p className="flex items-center justify-between gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 lg:block lg:bg-transparent lg:px-0 lg:py-0">
+                    <span className="text-[10px] text-emerald-500/75 lg:hidden">متوفر</span>
+                    {formatNumber(row.available)}
+                  </p>
+                  <p className="flex items-center justify-between gap-2 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-black text-sky-700 lg:block lg:bg-transparent lg:px-0 lg:py-0">
+                    <span className="text-[10px] text-sky-500/75 lg:hidden">محجوز</span>
+                    {formatNumber(row.reserved)}
+                  </p>
                   <InventoryStatusBadge status={status} />
                   <button
                     className="inline-flex h-9 w-9 items-center justify-center rounded-[0.7rem] bg-slate-50 text-slate-600 ring-1 ring-slate-100 transition hover:bg-emerald-50 hover:text-emerald-700"
@@ -401,7 +413,7 @@ export function WarehouseOperationShop({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 xl:grid-cols-[300px_minmax(360px,1fr)_250px]">
+        <div className="mt-4 grid min-w-0 gap-3 xl:grid-cols-[minmax(0,300px)_minmax(0,1fr)_minmax(0,250px)]">
           <aside className="rounded-[1rem] border border-slate-200 bg-white p-3 xl:order-3">
             <h3 className="text-sm font-black text-slate-950">اختر المنتجات</h3>
             <label className="mt-3 flex h-10 items-center gap-2 rounded-[0.75rem] border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500">

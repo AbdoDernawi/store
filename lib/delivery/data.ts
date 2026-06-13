@@ -22,6 +22,7 @@ export type DeliveryDashboardData = {
 };
 
 export type DeliveryOrderListItem = {
+  cash_collectable_total?: number;
   id: string;
   order_number: number | null;
   customer_name: string;
@@ -126,7 +127,7 @@ export type DeliveryNotification = {
 };
 
 const custodyStatuses = ["out_for_delivery"];
-const handoverCashStatuses = ["delivered", "partial_return", "full_return"];
+const handoverCashStatuses = ["delivered", "partial_return"];
 const handoverReturnStatuses = ["partial_return", "full_return", "cancelled"];
 const finishedStatuses = ["delivered", "partial_return", "full_return"];
 
@@ -261,11 +262,103 @@ export async function getDeliveryHandoverData(user: AuthSession) {
   const cityNames = new Map((citiesResult.data || []).map((city) => [city.id, city.name_ar]));
   const zoneNames = new Map((zonesResult.data || []).map((zone) => [zone.id, zone.name_ar]));
 
+  const normalizedCashOrders = normalizeOrderList(cashOrders.data || [], cityNames, zoneNames);
+  const cashCollectableAmounts = await getCashCollectableAmounts(supabase, normalizedCashOrders);
+
   return {
-    cashOrders: normalizeOrderList(cashOrders.data || [], cityNames, zoneNames),
+    cashOrders: normalizedCashOrders
+      .map((order) => ({
+        ...order,
+        cash_collectable_total:
+          cashCollectableAmounts.get(order.id) ??
+          (order.status === "delivered" ? order.total : Math.max(order.total, 0)),
+      }))
+      .filter((order) => Number(order.cash_collectable_total || 0) > 0),
     handovers: normalizeHandovers(handovers.data || []),
     returnOrders: normalizeOrderList(returnOrders.data || [], cityNames, zoneNames),
   };
+}
+
+async function getCashCollectableAmounts(
+  supabase: NonNullable<ReturnType<typeof createUserRouteClient>>,
+  orders: DeliveryOrderListItem[],
+) {
+  const orderIds = orders.map((order) => order.id);
+  const amounts = new Map<string, number>();
+
+  orders.forEach((order) => {
+    amounts.set(order.id, order.status === "delivered" ? order.total : 0);
+  });
+
+  if (!orderIds.length) {
+    return amounts;
+  }
+
+  const { data: orderItems } = await supabase
+    .from("order_items")
+    .select("id, order_id, quantity, unit_price")
+    .in("order_id", orderIds);
+  const items = (orderItems || []) as Array<{
+    id: string;
+    order_id: string;
+    quantity: number | string | null;
+    unit_price: number | string | null;
+  }>;
+  const itemIds = items.map((item) => item.id);
+
+  if (!itemIds.length) {
+    return amounts;
+  }
+
+  const { data: returns } = await supabase
+    .from("returns")
+    .select("id, order_id, status")
+    .in("order_id", orderIds)
+    .in("status", ["pending", "confirmed"]);
+  const activeReturns = (returns || []) as Array<{ id: string; order_id: string }>;
+  const returnIds = activeReturns.map((row) => row.id);
+
+  if (!returnIds.length) {
+    return amounts;
+  }
+
+  const { data: returnItems } = await supabase
+    .from("return_items")
+    .select("return_id, order_item_id, quantity")
+    .in("return_id", returnIds);
+  const returnOrderById = new Map(activeReturns.map((row) => [row.id, row.order_id]));
+  const returnQuantityByItem = new Map<string, number>();
+
+  ((returnItems || []) as Array<{
+    order_item_id: string;
+    quantity: number | string | null;
+    return_id: string;
+  }>).forEach((item) => {
+    if (!returnOrderById.has(item.return_id)) {
+      return;
+    }
+
+    returnQuantityByItem.set(
+      item.order_item_id,
+      (returnQuantityByItem.get(item.order_item_id) || 0) + Number(item.quantity || 0),
+    );
+  });
+
+  orders
+    .filter((order) => order.status === "partial_return")
+    .forEach((order) => {
+      const returnValue = items
+        .filter((item) => item.order_id === order.id)
+        .reduce(
+          (sum, item) =>
+            sum + (returnQuantityByItem.get(item.id) || 0) * Number(item.unit_price || 0),
+          0,
+        );
+
+      amounts.set(order.id, Math.max(order.total - returnValue, 0));
+    });
+
+  return amounts;
 }
 
 export async function getDeliveryReportData(user: AuthSession): Promise<DeliveryReportData> {
