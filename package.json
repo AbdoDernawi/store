@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "agent:test": "node scripts/run-agent-test-cycle.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/noto-sans-arabic": "^0.4.3",
