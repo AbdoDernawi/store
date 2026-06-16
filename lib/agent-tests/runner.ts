@@ -256,18 +256,16 @@ export async function runAgentTestCycle(options: AgentTestOptions) {
         },
         () => admin.postJson("/api/orders/approve", { order_id: orderId }),
       );
-      await step(
-        {
-          agentKey: "admin",
-          role: "admin",
-          scenario: "inventory",
-          step: "reserve_stock",
-          successMessage: "Stock reserved for order.",
-          targetId: orderId,
-          targetType: "order",
-        },
-        () => admin.postJson("/api/orders/reserve", { order_id: orderId }),
-      );
+      await record({
+        agentKey: "admin",
+        role: "admin",
+        scenario: "inventory",
+        step: "reserve_stock",
+        status: "info",
+        message: "Stock reservation is performed by approve_order.",
+        targetId: orderId,
+        targetType: "order",
+      });
     }
 
     await step(
