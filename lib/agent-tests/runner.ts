@@ -153,7 +153,7 @@ export async function runAgentTestCycle(options: AgentTestOptions) {
       await record({
         ...event,
         durationMs: Date.now() - startedAt,
-        message: error instanceof Error ? error.message : String(error),
+        message: errorToMessage(error),
         status: "failed",
       });
       throw error;
@@ -479,7 +479,7 @@ export async function runAgentTestCycle(options: AgentTestOptions) {
         status,
         summary: {
           ...summary,
-          error: error instanceof Error ? error.message : String(error),
+          error: errorToMessage(error),
         },
       })
       .eq("id", runId);
@@ -490,7 +490,7 @@ export async function runAgentTestCycle(options: AgentTestOptions) {
       status,
       summary: {
         ...summary,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorToMessage(error),
       },
     };
   }
@@ -501,12 +501,12 @@ async function loadFixtures(supabase: SupabaseClient) {
     .from("cities")
     .select("id, name_ar")
     .eq("is_active", true)
-    .order("sort_order", { ascending: true })
+    .order("name_ar", { ascending: true })
     .limit(1)
     .single();
 
   if (cityError || !city) {
-    throw cityError || new Error("No active city found for agent tests.");
+    throw cityError ? new Error(errorToMessage(cityError)) : new Error("No active city found for agent tests.");
   }
 
   const { data: zone, error: zoneError } = await supabase
@@ -519,7 +519,7 @@ async function loadFixtures(supabase: SupabaseClient) {
     .single();
 
   if (zoneError || !zone) {
-    throw zoneError || new Error("No active zone found for agent tests.");
+    throw zoneError ? new Error(errorToMessage(zoneError)) : new Error("No active zone found for agent tests.");
   }
 
   const { data: variants, error: variantsError } = await supabase
@@ -532,7 +532,7 @@ async function loadFixtures(supabase: SupabaseClient) {
     .limit(80);
 
   if (variantsError) {
-    throw variantsError;
+    throw new Error(errorToMessage(variantsError));
   }
 
   const stocked = ((variants || []) as VariantFixtureRow[])
@@ -599,7 +599,7 @@ async function loadOrderItems(supabase: SupabaseClient, orderId: string) {
     .order("created_at", { ascending: true });
 
   if (error) {
-    throw error;
+    throw new Error(errorToMessage(error));
   }
 
   const rows = (data || []) as OrderItemRow[];
@@ -628,7 +628,7 @@ async function verifyOrderStates(
     .in("id", orderIds);
 
   if (ordersError) {
-    throw ordersError;
+    throw new Error(errorToMessage(ordersError));
   }
 
   for (const [orderId, expectedStatus] of Object.entries(input.expected)) {
@@ -653,7 +653,7 @@ async function verifyOrderStates(
     .in("id", input.handoverIds);
 
   if (handoversError) {
-    throw handoversError;
+    throw new Error(errorToMessage(handoversError));
   }
 
   for (const handoverId of input.handoverIds) {
@@ -681,7 +681,7 @@ async function verifyOrderStates(
     .in("source_id", input.cashOrderIds);
 
   if (walletError) {
-    throw walletError;
+    throw new Error(errorToMessage(walletError));
   }
 
   await record({
@@ -706,7 +706,7 @@ async function verifyOrderStates(
     .in("order_item_id", input.returnItemIds);
 
   if (handoverItemsError) {
-    throw handoverItemsError;
+    throw new Error(errorToMessage(handoverItemsError));
   }
 
   await record({
@@ -809,4 +809,29 @@ function splitSetCookie(value: string | null) {
     .split(/,(?=\s*[^;,\s]+=)/g)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function errorToMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error) {
+    const maybeError = error as { details?: unknown; hint?: unknown; message?: unknown };
+    const parts = [maybeError.message, maybeError.details, maybeError.hint]
+      .filter(Boolean)
+      .map((part) => String(part));
+
+    if (parts.length) {
+      return parts.join(" ");
+    }
+
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+
+  return String(error);
 }
