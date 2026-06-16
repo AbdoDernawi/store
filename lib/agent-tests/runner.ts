@@ -593,8 +593,7 @@ async function loadOrderItems(supabase: SupabaseClient, orderId: string) {
   const { data, error } = await supabase
     .from("order_items")
     .select("id, order_id, product_variant_id, quantity, total_commission, warehouse_id")
-    .eq("order_id", orderId)
-    .order("created_at", { ascending: true });
+    .eq("order_id", orderId);
 
   if (error) {
     throw new Error(errorToMessage(error));
